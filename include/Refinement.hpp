@@ -83,15 +83,14 @@ public:
             inst.fix_columns(cols_to_fix, covered_rows);
 
             IF_VERBOSE {
-                fmt::print("\n#########################################################################\n");
-                fmt::print("######## REFINEMENT, active rows {}, active cols {}, pi {}\n", inst.get_active_rows().size(), inst.get_active_cols().size(), pi);
-                fmt::print("######## Best sol {} cols {}\n", S_star.get_cost(), S_star.size());
-                fmt::print("#########################################################################\n\n");
+                fmt::print("╔═══════════════════════════════════════════════════════════════════════════════\n");
+                fmt::print("║ REFINEMENT: active rows {}, active cols {}, pi {}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
+                fmt::print("║ Best sol {}, cols {}\n", S_star.get_cost(), S_star.size());
+                fmt::print("╚═══════════════════════════════════════════════════════════════════════════════\n\n");
             }
-
             assert(inst.compute_fixed_cost() <= S_star.get_cost());
 
-        } while (!inst.get_active_rows().empty() && S_star.get_cost() - 1.0 > std::ceil(BETA * u_star.get_lb()));
+        } while (inst.get_active_rows_size() > 0 && S_star.get_cost() - 1.0 > std::ceil(BETA * u_star.get_lb()));
 
         return std::move(S_star);  // messo il move solo x togliere l'errore poi lo possiam togliere
     }

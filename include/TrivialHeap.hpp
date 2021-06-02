@@ -1,11 +1,10 @@
 #ifndef AC_CFT_INCLUDE_TRIVIALHEAP_HPP
 #define AC_CFT_INCLUDE_TRIVIALHEAP_HPP
 
+#include <array>
 #include <cinttypes>
 
-#include <array>
-
-template <typename T, std::size_t Nm>
+template <typename T, std::size_t Nm, typename Comp>
 class TrivialHeap {
 public:
     inline auto size() const { return sz; }
@@ -30,17 +29,18 @@ public:
     inline auto end() const { return std::addressof(buf[sz]); }
     inline auto end() { return std::addressof(buf[sz]); }
 
-    template <typename Comp>
-    inline void insert(T elem, Comp comp) {
+    inline void insert(T elem) {
         assert(sz < Nm);
         auto* ptr = end();
-        while (ptr != begin() && comp(*(ptr - 1), elem)) {
+        while (ptr != begin() && Comp()(*(ptr - 1), elem)) {
             *(ptr) = *(ptr - 1);
             --ptr;
         }
         *ptr = elem;
         ++sz;
     }
+
+    inline void clear() { sz = 0U; }
 
 private:
     T buf[Nm];
