@@ -83,10 +83,10 @@ public:
             inst.fix_columns(cols_to_fix, covered_rows);
 
             IF_VERBOSE {
-                fmt::print("╔═══════════════════════════════════════════════════════════════════════════════\n");
+                fmt::print("╔═══════════════════════════════════════════════════════════════════════════════════\n");
                 fmt::print("║ REFINEMENT: active rows {}, active cols {}, pi {}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
                 fmt::print("║ Best sol {}, cols {}\n", S_star.get_cost(), S_star.size());
-                fmt::print("╚═══════════════════════════════════════════════════════════════════════════════\n\n");
+                fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
             }
             assert(inst.compute_fixed_cost() <= S_star.get_cost());
 

@@ -82,20 +82,21 @@ public:
                         IF_VERBOSE { fmt::print("│ ══> [{}] Improved global UB: {}\n", &u - &u_list[0], S_star.get_cost()); }
                     } else {
                         IF_VERBOSE {
-                            fmt::print("│ ──> [{:3}] Improved local UB: {} (global value {}, best is {})\n", &u - &u_list[0],
-                                       S_cost, GlobalSolution(subinst, S).get_cost(), glo_UB_star);
+                            fmt::print("│ ──> [{:3}] Improved local UB: {} (global value {}, best is {})\n", &u - &u_list[0], S_cost,
+                                       GlobalSolution(subinst, S).get_cost(), glo_UB_star);
                         }
                     }
                 }
             }
 
             u_k_LB = subinst.get_global_LB(u_k);  // u_k.compute_lb(subinst);
-            IF_VERBOSE {
-                fmt::print("│ Active rows {}, fixed cost {}, sub-problem LB {}, current UB {}\n", remaining_rows, fixed_cost, u_k_LB, glo_UB_star);
-            }
-            
+            IF_VERBOSE { fmt::print("│ Active rows {}, fixed cost {}, sub-problem LB {}, current UB {}\n", remaining_rows, fixed_cost, u_k_LB, glo_UB_star); }
+
             if (subinst.compute_fixed_cost() + u_k_LB > glo_UB_star - 1.0) {
-                IF_VERBOSE { fmt::print("│ Early exit: LB >= UB - 1\n"); }
+                IF_VERBOSE {
+                    fmt::print("│ Early exit: LB >= UB - 1\n");
+                    fmt::print("└───────────────────────────────────────────────────────────────────────────────────\n\n");
+                }
                 break;
             }
 
@@ -106,15 +107,8 @@ public:
             IF_VERBOSE { fmt::print("└───────────────────────────────────────────────────────────────────────────────────\n\n"); }
 
             u_k = SubGradient::u_perturbed_init(u_k, rnd);  // no u_star ma u_k credo che è il migliore LB prima del fixing?
-
+            ++iter;
         } while (remaining_rows > 0 /*&& subinst.compute_fixed_cost() + u_k_LB < glo_UB_star*/);
-
-        IF_VERBOSE {
-            fmt::print("\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-            fmt::print("@@@@@@@@ 3-PHASE eneded, active rows {}, sub-problem LB {}, current UB {}\n", remaining_rows, subinst.compute_fixed_cost() + u_k_LB,
-                       glo_UB_star);
-            fmt::print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n\n");
-        }
 
         return std::make_pair(S_star, glo_u);
     }
