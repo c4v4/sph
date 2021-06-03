@@ -77,7 +77,7 @@ private:
 
 class ExitCondition {
 public:
-    explicit ExitCondition(idx_t period_ = 300) : period(period_), counter(period_), LB_past(std::numeric_limits<real_t>::min()) { }
+    explicit ExitCondition(idx_t period_ = 300) : period(period_), counter(period_), LB_past(std::numeric_limits<real_t>::lowest()) { }
 
     bool operator()(real_t LB) {
         if (--counter == 0) {
