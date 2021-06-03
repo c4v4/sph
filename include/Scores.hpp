@@ -12,9 +12,9 @@
 
 class ScoreData {
 public:
-    ScoreData() : gamma(std::numeric_limits<real_t>::max()), mu(0), sigma(std::numeric_limits<real_t>::max()), marked(true) { }
+    ScoreData() : gamma(std::numeric_limits<real_t>::max()), mu(REMOVED_INDEX), sigma(std::numeric_limits<real_t>::max()) { }
 
-    ScoreData(real_t gamma_, idx_t mu_, bool marked_) : gamma(gamma_), mu(mu_), sigma(_score(gamma_, mu_)), marked(marked_) { }
+    ScoreData(real_t gamma_, idx_t mu_) : gamma(gamma_), mu(mu_), sigma(_score(gamma_, mu_)) { }
 
     ScoreData(const std::vector<real_t>& u_k, const MStar& M_star, const Column& j_col) {
         gamma = j_col.get_cost();
@@ -26,7 +26,6 @@ public:
             }
         }
         sigma = _score(gamma, mu);
-        marked = false;
     }
 
     void update(real_t u_k) {
@@ -38,16 +37,15 @@ public:
 
     void inserted_in_S() {
         sigma = gamma = std::numeric_limits<real_t>::max();
-        mu = 0;
-        marked = true;
+        mu = REMOVED_INDEX;
     }
 
-    [[nodiscard]] bool is_marked() const { return marked; }
+    [[nodiscard]] bool is_marked() const { return mu == REMOVED_INDEX; }
     [[nodiscard]] real_t get_score() const { return sigma; }
 
 private:
     static inline real_t _score(real_t gamma, idx_t mu) {
-        if (mu <= 0) { return std::numeric_limits<real_t>::max(); }
+        if (mu == 0 || mu == REMOVED_INDEX) { return std::numeric_limits<real_t>::max(); }
         if (gamma > 0) { return gamma / static_cast<real_t>(mu); }
         return gamma * static_cast<real_t>(mu);
     }
@@ -56,7 +54,6 @@ private:
     real_t gamma;
     idx_t mu;
     real_t sigma;
-    bool marked;
 };
 
 

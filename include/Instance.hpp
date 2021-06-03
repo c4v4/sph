@@ -224,6 +224,32 @@ public:
         return inserted_cols_idxs;
     }
 
+    void update_sol_cost(const std::vector<idx_t> &local_sol) {
+
+        real_t sol_cost = std::accumulate(local_sol.begin(), local_sol.end(), 0.0, [&](real_t sum, idx_t lj) { return sum + cols[lj].get_cost(); });
+        sol_cost += compute_fixed_cost();
+        update_sol_cost(local_sol, sol_cost);
+    }
+
+    void update_sol_cost(const std::vector<idx_t> &local_sol, real_t sol_cost) {
+
+        for (idx_t lj : local_sol) {
+            if (cols[lj].get_solcost() > sol_cost) {
+                cols[lj].set_solcost(sol_cost);
+                idx_t gj = local_to_global_col_idxs[lj];
+                inst.get_col(gj).set_solcost(sol_cost);
+            }
+        }
+
+        for (idx_t gj : fixed_cols_global_idxs) {
+            if (inst.get_col(gj).get_solcost() > sol_cost) { inst.get_col(gj).set_solcost(sol_cost); }
+        }
+
+        for (idx_t gj : inst.get_fixed_cols()) {
+            if (inst.get_col(gj).get_solcost() > sol_cost) { inst.get_col(gj).set_solcost(sol_cost); }
+        }
+    }
+
     void add_cols_if_changed(const std::vector<idx_t> &local_sol) {
 
         real_t sol_cost = std::accumulate(local_sol.begin(), local_sol.end(), 0.0, [&](real_t sum, idx_t lj) { return sum + cols[lj].get_cost(); });
@@ -290,10 +316,9 @@ public:
         _init_priced_cols(priced_cols);
         local_to_global_col_idxs.clear();
 
-        _select_C0_cols(priced_cols, local_to_global_col_idxs);
-
         covering_times.reset_uncovered(inst.get_nrows());
         _select_C2_cols(priced_cols, covering_times, local_to_global_col_idxs);
+        _select_C0_cols(priced_cols, local_to_global_col_idxs);
 
         replace_columns(local_to_global_col_idxs);
 
@@ -308,19 +333,21 @@ public:
 
         local_to_global_col_idxs.clear();
 
-        _select_C0_cols(priced_cols, local_to_global_col_idxs);
-        // fmt::print("C0: {} ", local_to_global_col_idxs.size());
-        // auto old_s = local_to_global_col_idxs.size();
 
         covering_times.reset_uncovered(inst.get_nrows());  // reset convered_rows to consider only reduced costs covering for C2
         _select_C1_cols(priced_cols, covering_times, local_to_global_col_idxs);
-        // fmt::print("C1: {} ", local_to_global_col_idxs.size() - old_s);
-        // old_s = local_to_global_col_idxs.size();
+        // fmt::print("C1: {} ", local_to_global_col_idxs.size());
+        // auto old_s = local_to_global_col_idxs.size();
 
         _select_C2_cols(priced_cols, covering_times, local_to_global_col_idxs);
-        // fmt::print("C2: {}\n", local_to_global_col_idxs.size() - old_s);
+        // fmt::print("C2: {} ", local_to_global_col_idxs.size() - old_s);
+        // old_s = local_to_global_col_idxs.size();
+
+        _select_C0_cols(priced_cols, local_to_global_col_idxs);
+        // fmt::print("C0: {}\n", local_to_global_col_idxs.size() - old_s);
 
         replace_columns(local_to_global_col_idxs);
+
 
         IF_DEBUG {
             covering_times.reset_covered(cols, rows.size());
@@ -613,7 +640,7 @@ private:
 
     void _select_C0_cols(Priced_Columns &_priced_cols, std::vector<idx_t> &global_col_idxs) {
 
-        idx_t fivem = std::min<idx_t>(MIN_COV * inst.get_active_rows_size(), _priced_cols.size());
+        idx_t fivem = std::min<idx_t>(2 * inst.get_active_rows_size(), _priced_cols.size());
         global_col_idxs.reserve(fivem);
 
         // std::sort(priced_cols.begin(), priced_cols.end(), [](PricedCol& c1, PricedCol& c2) { return c1.sol_c < c2.sol_c; });
@@ -623,7 +650,7 @@ private:
         for (idx_t n = 0; n < fivem; n++) {
             assert(n < _priced_cols.size());
 
-            if (_priced_cols.is_selected(n)) { continue; }
+            if (_priced_cols.is_selected(n) || _priced_cols[n]->get_solcost() == std::numeric_limits<real_t>::max()) { continue; }
 
             idx_t gj = _priced_cols.get_global_index(n);
             global_col_idxs.emplace_back(gj);
@@ -679,7 +706,7 @@ private:
         // iterate over the remaining columns searching for the best covering
         for (auto &heap : best_cols) { heap.clear(); }
 
-        for (idx_t n = global_col_idxs.size(); n < _priced_cols.size(); ++n) {
+        for (idx_t n = 0; n < _priced_cols.size(); ++n) {
             if (_priced_cols.is_selected(n)) { continue; }
 
             Column *col = _priced_cols[n];
@@ -703,7 +730,7 @@ private:
 
                 idx_t gj = _priced_cols.get_global_index(n);
                 global_col_idxs.emplace_back(gj);
-                _covering_times.cover_rows(*_priced_cols[n]);
+                //_covering_times.cover_rows(*_priced_cols[n]);
 
                 _priced_cols.select(n);
             }

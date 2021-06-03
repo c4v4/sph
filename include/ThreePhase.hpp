@@ -71,6 +71,7 @@ public:
                 }
                 fmt::print("\n\n"); */
                 real_t S_cost = S.compute_cost(subinst);
+                subinst.update_sol_cost(S, fixed_cost + S_cost);
 
                 if (S_cost < S_curr_cost) {
                     S_curr = S;
