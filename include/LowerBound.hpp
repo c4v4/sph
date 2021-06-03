@@ -136,7 +136,7 @@ public:
             // base += delta_ui;
             for (auto j : rows[i]) {
                 real_t old_c = cols[j].get_cu();
-                real_t new_c = cols[j].update_lagr_cost(delta_ui);
+                real_t new_c = cols[j].update_cu(delta_ui);
 
                 if (new_c < threshold) { LB += new_c; }
                 if (old_c < threshold) { LB -= old_c; }

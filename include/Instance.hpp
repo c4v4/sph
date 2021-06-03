@@ -14,7 +14,7 @@
 #include "cft.hpp"
 #include "queue"
 
-#define MIN_COV 10U
+#define MIN_COV 5U
 
 class Instance {
 public:
@@ -305,9 +305,19 @@ public:
         real_t global_LB = _price_active_cols(u_k, priced_cols);
 
         local_to_global_col_idxs.clear();
+        covering_times.reset_uncovered(inst.get_nrows());
+
+
         _select_C0_cols(priced_cols, covering_times, local_to_global_col_idxs);
+        //fmt::print("C0: {} ", local_to_global_col_idxs.size());
+        //auto old_s = local_to_global_col_idxs.size();
+
         _select_C1_cols(priced_cols, covering_times, local_to_global_col_idxs);
+        //fmt::print("C1: {} ", local_to_global_col_idxs.size() - old_s);
+        //old_s = local_to_global_col_idxs.size();
+
         _select_C2_cols(priced_cols, covering_times, local_to_global_col_idxs);
+        //fmt::print("C2: {}\n", local_to_global_col_idxs.size() - old_s);
 
         replace_columns(local_to_global_col_idxs);
 
@@ -439,16 +449,14 @@ public:
             const auto &col = inst.get_col(gj);
             real_t c_u = col.get_cost();
 
-            // bool is_empty = true;
             for (idx_t gi : col) {
                 if (_is_global_row_active(gi)) {
-                    // is_empty = false;
                     idx_t li = global_to_local_row_idxs[gi];  // retrieve the mapped row index
                     c_u -= u_k[li];
                 }
             }
 
-            if (/* !is_empty && */ c_u < 0.0) { global_LB += c_u; }
+            if (c_u < 0.0) { global_LB += c_u; }
         }
 
         return global_LB;
@@ -569,33 +577,33 @@ private:
 
         // price all active columns and add their contribution to the LB
         real_t global_LB = std::reduce(u_k.begin(), u_k.end(), static_cast<real_t>(0.0));
-        // fmt::print("global LB base: {}\n", global_LB);
+        //fmt::print("global LB base: {} | ", global_LB);
 
         idx_t p_idx = 0;
         for (idx_t gj : inst.get_active_cols()) {
             Column *col = std::addressof(inst.get_col(gj));
-            real_t c_u = col->get_cost();
+            col->set_cu(col->get_cost());
 
             bool is_empty = true;
             for (idx_t gi : *col) {
                 if (_is_global_row_active(gi)) {
                     is_empty = false;
                     idx_t li = global_to_local_row_idxs[gi];  // retrieve the mapped row index
-                    c_u -= u_k[li];
+                    col->update_cu(u_k[li]);
                 }
             }
 
             if (!is_empty) {  // check for empty columns
-                if (c_u < 0.0) {
-                    // fmt::print("{}\n", gj);
-                    global_LB += c_u;
+                if (col->get_cu() < 0.0) {
+                    // fmt::print("{}: gj {}, c_u {}, \n", p_idx, gj, c_u);
+                    global_LB += col->get_cu();
                 }
                 _priced_cols[p_idx++] = col;
 
                 assert(gj < inst.get_ncols());
             }
         }
-        // fmt::print("global LB total: {}\n", global_LB);
+        //fmt::print("global LB total: {}\n", global_LB);
 
         _priced_cols.resize(p_idx);
 
@@ -610,8 +618,6 @@ private:
         // std::sort(priced_cols.begin(), priced_cols.end(), [](PricedCol& c1, PricedCol& c2) { return c1.sol_c < c2.sol_c; });
         std::nth_element(_priced_cols.begin(), _priced_cols.begin() + fivem, _priced_cols.end(),
                          [](Column *c1, Column *c2) { return c1->get_solcost() < c2->get_solcost(); });
-
-        _covering_times.reset_uncovered(inst.get_nrows());
 
         for (idx_t n = 0; n < fivem; n++) {
             assert(n < _priced_cols.size());
@@ -637,8 +643,6 @@ private:
 
         std::nth_element(_priced_cols.begin(), _priced_cols.begin() + fivem, _priced_cols.end(),
                          [](Column *c1, Column *c2) { return c1->get_cu() < c2->get_cu(); });
-
-        _covering_times.reset_uncovered(inst.get_nrows());
 
         for (idx_t n = 0; n < fivem; n++) {
             assert(n < _priced_cols.size());

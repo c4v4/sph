@@ -29,6 +29,8 @@ public:
     [[nodiscard]] inline auto get_solcost() const { return sol_c; }
     inline void set_solcost(real_t new_c) { sol_c = new_c; }
 
+    inline void set_cu(real_t new_c) { c_u = new_c; }
+
     [[nodiscard]] inline auto get_cu() const { return c_u; }
 
     [[nodiscard]] inline auto compute_lagr_cost(const std::vector<real_t>& u) const {
@@ -49,7 +51,7 @@ public:
         return c_u;
     }
 
-    inline auto update_lagr_cost(const real_t delta_u) { return c_u -= delta_u; }
+    inline auto update_cu(const real_t delta_u) { return c_u -= delta_u; }
 
     bool operator==(const Column& other) const {
         if (c != other.c || sol_c != other.sol_c || size() != other.size()) { return false; }

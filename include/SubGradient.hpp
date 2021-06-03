@@ -113,7 +113,8 @@ private:
             }
 
             real_LB = lb_maintainer.update(subinst, delta_u);
-            // fmt::print("[{}]: old {}, new {}\n", iter, lagr_mul_LB(s, u), real_LB);
+            // real_LB = lb_maintainer.compute(subinst, u);
+            // fmt::print("[{}]: old {}, new {}\n", iter, lagr_mul_LB(subinst, u), real_LB);
 
             if (real_LB > UB) {
                 fmt::print(" WARNING: real_LB > UB\n");
@@ -131,6 +132,8 @@ private:
                 if (S_cost < UB) { UB = S_cost; }
             }
 
+            // fmt::print("[{:^4}] Lower Bound: {:.4} (best {:.4}), lambda {:.4}, S_cost {:.4}\n", iter, real_LB, LB, lambda.get(), S.compute_cost(subinst));
+
             if constexpr (heuristic_phase) {
                 u_list.emplace_back(u);
             } else {
@@ -141,16 +144,16 @@ private:
                                    S.compute_cost(subinst));
                     }
 
-                    break;  // end
+                    return;
                 }
 
                 T.inc();
                 if (T.reached()) {
                     const auto global_LB = subinst.price(u);
                     T.reset(global_LB, real_LB, UB);
+                    // fmt::print("Pricing: global {}, local {}\n", global_LB, real_LB);
 
                     LB = real_LB = lb_maintainer.compute(subinst, u);
-                    // fmt::print("INIT: Old {}, new {}\n", lagr_mul_LB(s, u), real_LB);
                 }
             }
         }
