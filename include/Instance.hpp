@@ -288,9 +288,11 @@ public:
         fixed_cols_global_idxs.clear();
 
         _init_priced_cols(priced_cols);
-        covering_times.reset_uncovered(inst.get_nrows());
         local_to_global_col_idxs.clear();
-        _select_C0_cols(priced_cols, covering_times, local_to_global_col_idxs);
+
+        _select_C0_cols(priced_cols, local_to_global_col_idxs);
+
+        covering_times.reset_uncovered(inst.get_nrows());
         _select_C2_cols(priced_cols, covering_times, local_to_global_col_idxs);
 
         replace_columns(local_to_global_col_idxs);
@@ -305,19 +307,18 @@ public:
         real_t global_LB = _price_active_cols(u_k, priced_cols);
 
         local_to_global_col_idxs.clear();
-        covering_times.reset_uncovered(inst.get_nrows());
 
+        _select_C0_cols(priced_cols, local_to_global_col_idxs);
+        // fmt::print("C0: {} ", local_to_global_col_idxs.size());
+        // auto old_s = local_to_global_col_idxs.size();
 
-        _select_C0_cols(priced_cols, covering_times, local_to_global_col_idxs);
-        //fmt::print("C0: {} ", local_to_global_col_idxs.size());
-        //auto old_s = local_to_global_col_idxs.size();
-
+        covering_times.reset_uncovered(inst.get_nrows());  // reset convered_rows to consider only reduced costs covering for C2
         _select_C1_cols(priced_cols, covering_times, local_to_global_col_idxs);
-        //fmt::print("C1: {} ", local_to_global_col_idxs.size() - old_s);
-        //old_s = local_to_global_col_idxs.size();
+        // fmt::print("C1: {} ", local_to_global_col_idxs.size() - old_s);
+        // old_s = local_to_global_col_idxs.size();
 
         _select_C2_cols(priced_cols, covering_times, local_to_global_col_idxs);
-        //fmt::print("C2: {}\n", local_to_global_col_idxs.size() - old_s);
+        // fmt::print("C2: {}\n", local_to_global_col_idxs.size() - old_s);
 
         replace_columns(local_to_global_col_idxs);
 
@@ -577,7 +578,7 @@ private:
 
         // price all active columns and add their contribution to the LB
         real_t global_LB = std::reduce(u_k.begin(), u_k.end(), static_cast<real_t>(0.0));
-        //fmt::print("global LB base: {} | ", global_LB);
+        // fmt::print("global LB base: {} | ", global_LB);
 
         idx_t p_idx = 0;
         for (idx_t gj : inst.get_active_cols()) {
@@ -603,14 +604,14 @@ private:
                 assert(gj < inst.get_ncols());
             }
         }
-        //fmt::print("global LB total: {}\n", global_LB);
+        // fmt::print("global LB total: {}\n", global_LB);
 
         _priced_cols.resize(p_idx);
 
         return global_LB;
     }
 
-    void _select_C0_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs) {
+    void _select_C0_cols(Priced_Columns &_priced_cols, std::vector<idx_t> &global_col_idxs) {
 
         idx_t fivem = std::min<idx_t>(MIN_COV * inst.get_active_rows_size(), _priced_cols.size());
         global_col_idxs.reserve(fivem);
@@ -626,7 +627,6 @@ private:
 
             idx_t gj = _priced_cols.get_global_index(n);
             global_col_idxs.emplace_back(gj);
-            _covering_times.cover_rows(*_priced_cols[n]);
             _priced_cols.select(n);
         }
 
