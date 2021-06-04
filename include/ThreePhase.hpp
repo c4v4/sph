@@ -52,35 +52,27 @@ public:
             u_k = subgradient.solve(S_curr_cost, u_k);  // use S_curr_cost because u_k refers to the current sub-problem
 
             // 2. HEURISTIC PHASE
-            auto& u_list = subgradient.explore(S_curr_cost, u_k, EXPLORING_ITERS);
+            auto& u_list = subgradient.explore(S_curr_cost, u_k, EXPLORING_ITERS * iter);
             u_list.emplace_back(u_k);
 
             if (iter == 1) { glo_u = GlobalMultipliers(subinst, u_k); }
 
             auto fixed_cost = subinst.compute_fixed_cost();
-            // std::sort(S_star.begin(), S_star.end());
             for (auto& u : u_list) {
 
                 LocalSolution S = greedy(u);
-                /* fmt::print("Coverage: {}\n", fmt::join(covered_rows, ", "));
-                for (idx_t j : S) {
-                    idx_t counter = 0;
-                    for (idx_t i : subinst.get_col(j)) { counter += covered_rows[i] > 1; }
-                    if (std::binary_search(S_star.begin(), S_star.end(), subinst.get_global_col_idx(j))) { fmt::print("HERE=>"); }
-                    fmt::print("col {}: {}/{},  ", j, counter, subinst.get_col(j).size());
-                }
-                fmt::print("\n\n"); */
+
                 real_t S_cost = S.compute_cost(subinst);
                 subinst.update_sol_cost(S, fixed_cost + S_cost);
 
                 if (S_cost < S_curr_cost) {
                     S_curr = S;
                     S_curr_cost = S_cost;
-                    // u_star = u;
+                    u_star = u;
                     if (S_cost + fixed_cost < glo_UB_star) {
                         glo_UB_star = S_cost + fixed_cost;
                         S_star = GlobalSolution(subinst, S);
-                        IF_VERBOSE { fmt::print("│ ══> [{}] Improved global UB: {}\n", &u - &u_list[0], S_star.get_cost()); }
+                        IF_VERBOSE { fmt::print("│ ══> [{:3}] Improved global UB: {}\n", &u - &u_list[0], S_star.get_cost()); }
                     } else {
                         IF_VERBOSE {
                             fmt::print("│ ──> [{:3}] Improved local UB: {} (global value {}, best is {})\n", &u - &u_list[0], S_cost,
@@ -103,11 +95,11 @@ public:
 
             // 3. COLUMN FIXING
             auto glo_S_curr = GlobalSolution(subinst, S_curr);
-            remaining_rows = col_fixing(u_k, glo_S_curr);
+            remaining_rows = col_fixing(u_star, glo_S_curr);
 
             IF_VERBOSE { fmt::print("└───────────────────────────────────────────────────────────────────────────────────\n\n"); }
 
-            u_k = SubGradient::u_perturbed_init(u_k, rnd);  // no u_star ma u_k credo che è il migliore LB prima del fixing?
+            u_k = SubGradient::u_perturbed_init(u_star, rnd);  // no u_star ma u_k credo che è il migliore LB prima del fixing?
             ++iter;
         } while (remaining_rows > 0 /*&& subinst.compute_fixed_cost() + u_k_LB < glo_UB_star*/);
 

@@ -13,7 +13,7 @@
 #include "Solution.hpp"
 #include "cft.hpp"
 
-#define ENUM_THRESH 0
+#define ENUM_THRESH 10
 
 template <typename T, size_t N>
 constexpr std::array<T, N> make_array(T value) {
