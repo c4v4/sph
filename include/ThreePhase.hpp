@@ -35,7 +35,7 @@ public:
         auto glo_UB_star = std::min(global_UB, S_star.get_cost());
 
         real_t u_k_LB;
-        idx_t remaining_rows;
+        idx_t remaining_rows = subinst.get_nrows();
 
         auto u_k = SubGradient::u_greedy_init(subinst);
         idx_t iter = 1;
