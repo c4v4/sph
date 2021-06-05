@@ -107,16 +107,18 @@ private:
             real_t s2sum = 0.0;
             for (auto cov : covered_rows) { s2sum += static_cast<real_t>((1.0 - cov) * (1.0 - cov)); }
             for (idx_t i = 0; i < nrows; ++i) {
-                real_t old_u = u[i];
-                u[i] = std::max<real_t>(0.0, u[i] + lambda.get() * ((UB - real_LB) / s2sum) * (1.0 - covered_rows[i]));
-                if (std::abs(u[i] - old_u) > REAL_TOLERANCE) { delta_u.emplace_back(i, u[i] - old_u); }
+                real_t delta = lambda.get() * ((UB - real_LB) / s2sum) * (1.0 - covered_rows[i]);
+                if (std::abs(delta) > REAL_TOLERANCE) {
+                    u[i] = std::max<real_t>(0.0, u[i] + delta);
+                    delta_u.emplace_back(i, delta);
+                }
             }
 
             real_LB = lb_maintainer.update(subinst, delta_u);
             // real_LB = lb_maintainer.compute(subinst, u);
             // fmt::print("[{}]: old {}, new {}\n", iter, lagr_mul_LB(subinst, u), real_LB);
 
-            if (real_LB > UB) {
+            if (real_LB >= UB) {
                 fmt::print(" WARNING: real_LB > UB\n");
                 u_star = u;
                 return;
