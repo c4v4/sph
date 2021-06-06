@@ -715,12 +715,7 @@ private:
                 if (!_is_global_row_active(gi) || _covering_times[gi] <= 0) { continue; }
                 assert(gi < best_cols.size());
 
-                if (best_cols[gi].size() < _covering_times[gi]) {
-                    best_cols[gi].insert(pair);
-                } else if (Col_Comp()(best_cols[gi].back(), pair)) {
-                    best_cols[gi].pop_back();
-                    best_cols[gi].insert(pair);
-                }
+                best_cols[gi].try_insert(pair);
             }
         }
 

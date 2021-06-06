@@ -32,33 +32,44 @@ public:
         auto glo_u = GlobalMultipliers();
         auto u_star = LocalMultipliers(subinst.get_nrows(), 0.0);
         auto S_star = GlobalSolution(subinst, greedy(u_star));
-        auto glo_UB_star = std::min(global_UB, S_star.get_cost());
+        auto glo_UB_star = std::min<real_t>(global_UB, S_star.get_cost());
 
-        real_t u_k_LB;
+        real_t local_LB;
         idx_t remaining_rows = subinst.get_nrows();
+        real_t fixed_cost = subinst.compute_fixed_cost();
 
-        auto u_k = SubGradient::u_greedy_init(subinst);
+        LocalMultipliers u_k = SubGradient::u_greedy_init(subinst);
         idx_t iter = 1;
 
         do {
 
             IF_VERBOSE { fmt::print("┌─ 3-PHASE: iter {:2} ────────────────────────────────────────────────────────────────\n", iter); }
 
-            auto S_curr = greedy(u_k);
+            LocalSolution S_curr = greedy(u_k);
             real_t S_curr_cost = S_curr.compute_cost(subinst);
             assert(S_curr_cost > 0);
 
             // 1. SUBGRADIENT PHASE
             u_k = subgradient.solve(S_curr_cost, u_k);  // use S_curr_cost because u_k refers to the current sub-problem
+            local_LB = subgradient.get_best_LB();       // u_k.compute_lb(subinst);
+
+            if (fixed_cost + local_LB >= glo_UB_star - HAS_INTEGRAL_COSTS) {
+                IF_VERBOSE {
+                    fmt::print("│ Active rows {}, fixed cost {}, sub-problem LB {}, LB {}, UB {}\n", remaining_rows, fixed_cost, local_LB,
+                               fixed_cost + local_LB, glo_UB_star);
+                    fmt::print("│ Early exit: LB >= UB - 1\n");
+                    fmt::print("└───────────────────────────────────────────────────────────────────────────────────\n\n");
+                }
+                break;
+            }
 
             // 2. HEURISTIC PHASE
-            auto& u_list = subgradient.explore(S_curr_cost, u_k, EXPLORING_ITERS * iter);
+            auto& u_list = subgradient.explore(S_curr_cost, u_k, EXPLORING_ITERS);
             u_list.emplace_back(u_k);
 
             if (iter == 1) { glo_u = GlobalMultipliers(subinst, u_k); }
 
-            auto fixed_cost = subinst.compute_fixed_cost();
-            for (auto& u : u_list) {
+            for (LocalMultipliers& u : u_list) {
 
                 LocalSolution S = greedy(u);
 
@@ -82,10 +93,12 @@ public:
                 }
             }
 
-            u_k_LB = subinst.get_global_LB(u_k);  // u_k.compute_lb(subinst);
-            IF_VERBOSE { fmt::print("│ Active rows {}, fixed cost {}, sub-problem LB {}, current UB {}\n", remaining_rows, fixed_cost, u_k_LB, glo_UB_star); }
+            local_LB = subgradient.get_best_LB();  // u_k.compute_lb(subinst);
 
-            if (subinst.compute_fixed_cost() + u_k_LB > glo_UB_star - 1.0) {
+            fmt::print("│ Active rows {}, fixed cost {}, sub-problem LB {}, LB {}, UB {}\n", remaining_rows, fixed_cost, local_LB, fixed_cost + local_LB,
+                       glo_UB_star);
+            
+            if (fixed_cost + local_LB > glo_UB_star - HAS_INTEGRAL_COSTS) {
                 IF_VERBOSE {
                     fmt::print("│ Early exit: LB >= UB - 1\n");
                     fmt::print("└───────────────────────────────────────────────────────────────────────────────────\n\n");
@@ -96,12 +109,14 @@ public:
             // 3. COLUMN FIXING
             auto glo_S_curr = GlobalSolution(subinst, S_curr);
             remaining_rows = col_fixing(u_star, glo_S_curr);
+            fixed_cost = subinst.compute_fixed_cost();
+
+            u_k = SubGradient::u_perturbed_init(u_star, rnd);
+            ++iter;
 
             IF_VERBOSE { fmt::print("└───────────────────────────────────────────────────────────────────────────────────\n\n"); }
 
-            u_k = SubGradient::u_perturbed_init(u_star, rnd);  // no u_star ma u_k credo che è il migliore LB prima del fixing?
-            ++iter;
-        } while (remaining_rows > 0 /*&& subinst.compute_fixed_cost() + u_k_LB < glo_UB_star*/);
+        } while (remaining_rows > 0);
 
         return std::make_pair(S_star, glo_u);
     }

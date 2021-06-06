@@ -7,7 +7,7 @@
 #include "LowerBound.hpp"
 #include "SubGradientUtils.hpp"
 
-#define REAL_TOLERANCE 1E-10
+#define REAL_TOLERANCE 1E-6
 
 class SubGradient {
 
@@ -116,37 +116,29 @@ private:
                     }
                 }
             } else {
-                fmt::print(" WARNING: s2sum == 0\n");
+                IF_VERBOSE { fmt::print(" WARNING: s2sum == 0\n"); }
                 if constexpr (heuristic_phase) { u_list.emplace_back(u); }
-                u_star = u;
                 return;
             }
 
             real_LB = lb_maintainer.update(subinst, delta_u);
-            // real_LB = lb_maintainer.compute(subinst, u);
-            // fmt::print("[{}]: old {}, new {}\n", iter, lagr_mul_LB(subinst, u), real_LB);
-
-            if (real_LB >= UB) {
-                if constexpr (heuristic_phase) {
-                    u_list.emplace_back(u);
-                    fmt::print(" (Ex) ");
-                }
-                fmt::print(" WARNING: real_LB({}) > UB({})\n", real_LB, UB);
-                u_star = u;
-                return;
-            }
 
             if (real_LB > LB_star) {
                 LB_star = real_LB;
                 u_star = u;
             }
 
-            if (covered_rows.get_uncovered() == 0) {
-                real_t S_cost = S.compute_cost(subinst) /* + subinst.compute_fixed_cost() */;
-                if (S_cost < UB) { UB = S_cost; }
+            if (real_LB > UB - HAS_INTEGRAL_COSTS) {
+                IF_VERBOSE { fmt::print(" WARNING: real_LB({}) > UB({}) - {}\n", real_LB, UB, HAS_INTEGRAL_COSTS); }
+                if constexpr (heuristic_phase) { u_list.emplace_back(u); }
+                u_star = u;
+                return;
             }
 
-            // fmt::print("[{:^4}] Lower Bound: {:.4} (best {:.4}), lambda {:.4}, S_cost {:.4}\n", iter, real_LB, LB, lambda.get(), S.compute_cost(subinst));
+            if (covered_rows.get_uncovered() == 0) {
+                real_t S_cost = S.compute_cost(subinst);
+                if (S_cost < UB) { UB = S_cost; }
+            }
 
             if constexpr (heuristic_phase) {
                 u_list.emplace_back(u);
@@ -174,4 +166,4 @@ private:
     }
 };
 
-#endif  // AC_CFT_INCLUDE_SUBGRADIENT_HPP_
+#endif

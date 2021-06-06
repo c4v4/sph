@@ -20,6 +20,6 @@ typedef float real_t;
 
 #define REMOVED_INDEX (std::numeric_limits<idx_t>::max())
 
-
+#define HAS_INTEGRAL_COSTS 1.0  // 1.0 if yes , 0.0 if no
 
 #endif  // AC_CFT_INCLUDE_CFT_HPP_

@@ -18,7 +18,7 @@
  */
 class Greedy {
 public:
-    Greedy(SubInstance& subinst_, MStar& M_star_) : subinst(subinst_), M_star(M_star_), sigmas(subinst_), remove_redundat_cols(subinst_, M_star_) { }
+    Greedy(SubInstance& subinst_, MStar& M_star_) : subinst(subinst_), M_star(M_star_), sigmas(subinst_), remove_redundat_cols(subinst_) { }
 
     /**
      * @brief Greedy procedure that finds feasible solutions starting from a set of Lagrangian multipliers.
@@ -55,7 +55,7 @@ public:
             if (S.size() < Ssize) { assert(M_star.get_uncovered() == 0); }
         }
 
-        remove_redundat_cols(S, u_k);
+        remove_redundat_cols(S, u_k, M_star);
 
         IF_DEBUG {
             M_star.reset_covered(subinst.get_cols(), S, subinst.get_nrows());

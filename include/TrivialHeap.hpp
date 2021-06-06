@@ -29,8 +29,13 @@ public:
     inline auto end() const { return std::addressof(buf[sz]); }
     inline auto end() { return std::addressof(buf[sz]); }
 
-    inline void insert(T elem) {
-        assert(sz < Nm);
+    inline bool try_insert(T elem) {
+
+        if (sz >= Nm) {
+            if (!Comp()(back(), elem)) { return false; }
+            pop_back();
+        }
+
         auto* ptr = end();
         while (ptr != begin() && Comp()(*(ptr - 1), elem)) {
             *(ptr) = *(ptr - 1);
@@ -38,6 +43,8 @@ public:
         }
         *ptr = elem;
         ++sz;
+
+        return true;
     }
 
     inline void clear() { sz = 0U; }

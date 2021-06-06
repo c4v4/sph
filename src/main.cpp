@@ -18,8 +18,9 @@ int main(int argc, char **argv) {
     auto seed = 0UL;
     if (argc > 2) { seed = std::stoul(argv[2]); }
 
-    //const auto data = parse_cvrp_instance(path);
+    // const auto data = parse_cvrp_instance(path);
     const auto data = parse_rail_instance(path);
+    // const auto data = parse_scp_instance(path);
 
     std::mt19937 rnd(seed);
 

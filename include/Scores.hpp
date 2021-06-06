@@ -7,8 +7,8 @@
 #include "MStar.hpp"
 #include "Multipliers.hpp"
 #include "Solution.hpp"
+#include "TrivialHeap.hpp"
 #include "cft.hpp"
-
 
 class ScoreData {
 public:
@@ -16,7 +16,7 @@ public:
 
     ScoreData(real_t gamma_, idx_t mu_) : gamma(gamma_), mu(mu_), sigma(_score(gamma_, mu_)) { }
 
-    ScoreData(const std::vector<real_t>& u_k, const MStar& M_star, const Column& j_col) {
+    ScoreData(const std::vector<real_t>& u_k, const MStar& M_star, Column& j_col) {
         gamma = j_col.get_cost();
         mu = 0UL;
         for (const auto i : j_col) {
@@ -79,14 +79,21 @@ public:
 
     // Step 1
     inline idx_t argmin_score() {
-        idx_t j_star = B[0];
-        real_t sigma_jstar = gam_mu_sig[B[0]].get_score();
-        for (idx_t j = 1; j < Bsize; ++j) {
-            const real_t sigma = gam_mu_sig[B[j]].get_score();
+
+        idx_t bj = 0;
+        while (bj < Bsize && gam_mu_sig[B[bj]].is_marked()) { ++bj; }
+        assert(bj < Bsize);
+
+        idx_t j_star = B[bj];
+        real_t sigma_jstar = gam_mu_sig[j_star].get_score();
+
+        for (++bj; bj < Bsize; ++bj) {
+            idx_t j = B[bj];
+            real_t sigma = gam_mu_sig[j].get_score();
             if (sigma < sigma_jstar) {
-                assert(!gam_mu_sig[B[j]].is_marked());
+                assert(!gam_mu_sig[j].is_marked());
+                j_star = j;
                 sigma_jstar = sigma;
-                j_star = B[j];
             }
         }
 
