@@ -56,9 +56,12 @@ public:
         return u_list;
     }
 
+    real_t get_best_LB() { return LB_star; }
+
 private:
     SubInstance& subinst;
 
+    real_t LB_star;
     LocalMultipliers u_star;
     LocalMultipliers u;
 
@@ -78,7 +81,7 @@ private:
         auto T = PricingPeriod(10, std::min<idx_t>(1000UL, nrows / 3));        // pricing frequency
         auto time_to_exit = ExitCondition(300U);
 
-        auto LB = std::numeric_limits<real_t>::lowest();
+        LB_star = std::numeric_limits<real_t>::lowest();
 
         u = u_0;
         u_star = u_0;
@@ -86,8 +89,6 @@ private:
         MStar covered_rows;
         LocalSolution S;
         real_t real_LB = lb_maintainer.compute(subinst, u);
-        // const auto& s = subinst;
-        // fmt::print("INIT: Old {}, new {}\n", lagr_mul_LB(s, u), real_LB);
 
         std::vector<std::pair<idx_t, real_t>> delta_u;
 
@@ -99,19 +100,26 @@ private:
                 norm_reducer.compute_sol(subinst, S, covered_rows);
             } else {
                 norm_reducer.compute_reduced_sol(subinst, S, covered_rows);
-                // fmt::print(stderr, "S size {} (rows: {})\n", S.size(), subinst.get_nrows());
             }
 
             // Multipliers update:
             delta_u.clear();
-            real_t s2sum = 0.0;
-            for (auto cov : covered_rows) { s2sum += static_cast<real_t>((1.0 - cov) * (1.0 - cov)); }
-            for (idx_t i = 0; i < nrows; ++i) {
-                real_t delta = lambda.get() * ((UB - real_LB) / s2sum) * (1.0 - covered_rows[i]);
-                if (std::abs(delta) > REAL_TOLERANCE) {
-                    u[i] = std::max<real_t>(0.0, u[i] + delta);
-                    delta_u.emplace_back(i, delta);
+            idx_t s2sum = 0;
+            for (idx_t cov : covered_rows) { s2sum += (1 - static_cast<int>(cov)) * (1 - static_cast<int>(cov)); }
+
+            if (s2sum > 0) {
+                for (idx_t i = 0; i < nrows; ++i) {
+                    real_t new_u = std::max<real_t>(0.0, u[i] + lambda.get() * ((UB - real_LB) / s2sum) * (1 - static_cast<int>(covered_rows[i])));
+                    if (std::abs(new_u - u[i]) > REAL_TOLERANCE) {
+                        delta_u.emplace_back(i, new_u - u[i]);
+                        u[i] = new_u;
+                    }
                 }
+            } else {
+                fmt::print(" WARNING: s2sum == 0\n");
+                if constexpr (heuristic_phase) { u_list.emplace_back(u); }
+                u_star = u;
+                return;
             }
 
             real_LB = lb_maintainer.update(subinst, delta_u);
@@ -119,18 +127,22 @@ private:
             // fmt::print("[{}]: old {}, new {}\n", iter, lagr_mul_LB(subinst, u), real_LB);
 
             if (real_LB >= UB) {
-                fmt::print(" WARNING: real_LB > UB\n");
+                if constexpr (heuristic_phase) {
+                    u_list.emplace_back(u);
+                    fmt::print(" (Ex) ");
+                }
+                fmt::print(" WARNING: real_LB({}) > UB({})\n", real_LB, UB);
                 u_star = u;
                 return;
             }
 
-            if (real_LB > LB) {
-                LB = real_LB;
+            if (real_LB > LB_star) {
+                LB_star = real_LB;
                 u_star = u;
             }
 
             if (covered_rows.get_uncovered() == 0) {
-                real_t S_cost = S.compute_cost(subinst) + subinst.compute_fixed_cost();
+                real_t S_cost = S.compute_cost(subinst) /* + subinst.compute_fixed_cost() */;
                 if (S_cost < UB) { UB = S_cost; }
             }
 
@@ -140,9 +152,9 @@ private:
                 u_list.emplace_back(u);
             } else {
 
-                if (time_to_exit(LB)) {
+                if (time_to_exit(LB_star)) {
                     IF_VERBOSE {
-                        fmt::print("[{:^4}] Lower Bound: {:.4} (best {:.4}), lambda {:.4}, S_cost {:.4}\n", iter, real_LB, LB, lambda.get(),
+                        fmt::print("[{:^4}] Lower Bound: {:.4} (best {:.4}), lambda {:.4}, S_cost {:.4}\n", iter, real_LB, LB_star, lambda.get(),
                                    S.compute_cost(subinst));
                     }
 
@@ -155,7 +167,7 @@ private:
                     T.reset(global_LB, real_LB, UB);
                     // fmt::print("Pricing: global {}, local {}\n", global_LB, real_LB);
 
-                    LB = real_LB = lb_maintainer.compute(subinst, u);
+                    LB_star = real_LB = lb_maintainer.compute(subinst, u);
                 }
             }
         }
