@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_REFINEMENT_HPP_
-#define AC_CFT_INCLUDE_REFINEMENT_HPP_
+#ifndef SCP_INCLUDE_REFINEMENT_HPP_
+#define SCP_INCLUDE_REFINEMENT_HPP_
 
 #include "Instance.hpp"
 #include "ThreePhase.hpp"
@@ -58,7 +58,7 @@ public:
 
             // 7. Refinement Fix
             inst.reset_fixing();
-            auto& cols = inst.get_cols();
+            Cols& cols = inst.get_cols();
             covered_rows.reset_covered(cols, S_star, inst.get_nrows());
 
             deltas.resize(S_star.size());

@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_SUBGRADIENT_HPP_
-#define AC_CFT_INCLUDE_SUBGRADIENT_HPP_
+#ifndef SCP_INCLUDE_SUBGRADIENT_HPP_
+#define SCP_INCLUDE_SUBGRADIENT_HPP_
 
 #include <cassert>
 #include <random>
@@ -127,6 +127,8 @@ private:
                 LB_star = real_LB;
                 u_star = u;
             }
+
+            //fmt::print("[{:^4}] Lower Bound: {:.4} (best {:.4}), lambda {:.4}, S_cost {:.4}\n", iter, real_LB, LB_star, lambda.get(), S.compute_cost(subinst));
 
             if (real_LB > UB - HAS_INTEGRAL_COSTS) {
                 IF_VERBOSE { fmt::print(" WARNING: real_LB({}) > UB({}) - {}\n", real_LB, UB, HAS_INTEGRAL_COSTS); }

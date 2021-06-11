@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_COUNTER_HPP_
-#define AC_CFT_INCLUDE_COUNTER_HPP_
+#ifndef SCP_INCLUDE_COUNTER_HPP_
+#define SCP_INCLUDE_COUNTER_HPP_
 
 #include "cft.hpp"
 
@@ -41,4 +41,4 @@ private:
 };
 
 
-#endif  // AC_CFT_INCLUDE_COUNTER_HPP_
+#endif  // SCP_INCLUDE_COUNTER_HPP_

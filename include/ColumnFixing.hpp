@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_COLUMNFIXING_HPP_
-#define AC_CFT_INCLUDE_COLUMNFIXING_HPP_
+#ifndef SCP_INCLUDE_COLUMNFIXING_HPP_
+#define SCP_INCLUDE_COLUMNFIXING_HPP_
 
 #include "Greedy.hpp"
 #include "Instance.hpp"

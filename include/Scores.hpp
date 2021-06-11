@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_SCORE_HPP
-#define AC_CFT_INCLUDE_SCORE_HPP
+#ifndef SCP_INCLUDE_SCORE_HPP
+#define SCP_INCLUDE_SCORE_HPP
 
 #include <numeric>
 
@@ -16,7 +16,7 @@ public:
 
     ScoreData(real_t gamma_, idx_t mu_) : gamma(gamma_), mu(mu_), sigma(_score(gamma_, mu_)) { }
 
-    ScoreData(const std::vector<real_t>& u_k, const MStar& M_star, Column& j_col) {
+    ScoreData(const std::vector<real_t>& u_k, const MStar& M_star, SubInstCol& j_col) {
         gamma = j_col.get_cost();
         mu = 0UL;
         for (const auto i : j_col) {

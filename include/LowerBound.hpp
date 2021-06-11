@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_LOWERBOUND_HPP
-#define AC_CFT_INCLUDE_LOWERBOUND_HPP
+#ifndef SCP_INCLUDE_LOWERBOUND_HPP_
+#define SCP_INCLUDE_LOWERBOUND_HPP_
 
 #include <algorithm>
 #include <array>

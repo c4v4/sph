@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_PARSING_HPP_
-#define AC_CFT_INCLUDE_PARSING_HPP_
+#ifndef SCP_INCLUDE_PARSING_HPP_
+#define SCP_INCLUDE_PARSING_HPP_
 
 #include <algorithm>
 #include <cassert>
@@ -173,4 +173,4 @@ InstanceData parse_cvrp_instance(const std::string& path) {
     return inst;
 }
 
-#endif  // AC_CFT_INCLUDE_PARSING_HPP_
+#endif  // SCP_INCLUDE_PARSING_HPP_

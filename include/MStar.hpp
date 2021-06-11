@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_MSTAR_HPP
-#define AC_CFT_INCLUDE_MSTAR_HPP
+#ifndef SCP_INCLUDE_MSTAR_HPP_
+#define SCP_INCLUDE_MSTAR_HPP_
 
 #include "IndexList.hpp"
 #include "cft.hpp"
@@ -14,17 +14,21 @@ public:
         M_star.assign(nrows, 0);
     }
 
-    inline void reset_covered(const std::vector<Column>& cols, idx_t nrows) {
+    /// inline void reset_covered(const std::vector<Column>& cols, idx_t nrows) {
+    template<typename Collection>
+    inline void reset_covered(const Collection& cols, idx_t nrows) {
         reset_uncovered(nrows);
         for (auto& j_col : cols) { cover_rows(j_col); }
     }
 
-    inline void reset_covered(const std::vector<Column>& cols, const std::vector<idx_t>& indexes, idx_t nrows) {
+    /// inline void reset_covered(const std::vector<Column>& cols, const std::vector<idx_t>& indexes, idx_t nrows) {
+    template<typename Collection>
+    inline void reset_covered(const Collection& cols, const std::vector<idx_t>& indexes, idx_t nrows) {
         reset_uncovered(nrows);
         for (auto& j : indexes) { cover_rows(cols[j]); }
     }
 
-    inline bool is_redundant(const Column& col) {
+    inline bool is_redundant(const SubInstCol& col) {
         for (const auto i : col) {
             assert(M_star[i] > 0);
             if (M_star[i] == 1) { return false; }
@@ -32,14 +36,16 @@ public:
         return true;
     }
 
-    inline void cover_rows(const std::vector<idx_t>& rows) {
+    template<typename IterableList>
+    inline void cover_rows(const IterableList& rows) {
         for (auto i : rows) {
             assert(i < M_star.size());
             cover(i);
         }
     }
 
-    inline void uncover_rows(const std::vector<idx_t>& rows) {
+    template<typename IterableList>
+    inline void uncover_rows(const IterableList& rows) {
         for (auto i : rows) {
             assert(i < M_star.size());
             uncover(i);

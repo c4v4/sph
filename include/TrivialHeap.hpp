@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_TRIVIALHEAP_HPP
-#define AC_CFT_INCLUDE_TRIVIALHEAP_HPP
+#ifndef SCP_INCLUDE_TRIVIALHEAP_HPP_
+#define SCP_INCLUDE_TRIVIALHEAP_HPP_
 
 #include <array>
 #include <cinttypes>

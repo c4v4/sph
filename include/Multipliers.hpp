@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_MULTIPLIERS_HPP_
-#define AC_CFT_INCLUDE_MULTIPLIERS_HPP_
+#ifndef SCP_INCLUDE_MULTIPLIERS_HPP_
+#define SCP_INCLUDE_MULTIPLIERS_HPP_
 #include <vector>
 
 #include "Instance.hpp"
@@ -44,16 +44,14 @@ public:
     explicit GlobalMultipliers(idx_t size) : BaseMultipliers(size), lb(std::numeric_limits<real_t>::lowest()) { }
     GlobalMultipliers(idx_t size, real_t val) : BaseMultipliers(size, val), lb(std::numeric_limits<real_t>::lowest()) { }
     GlobalMultipliers(const GlobalMultipliers& other) : BaseMultipliers(other), lb(other.lb) { }
-    GlobalMultipliers(GlobalMultipliers&& other)  noexcept : BaseMultipliers(std::move(other)), lb(other.lb) { }
+    GlobalMultipliers(GlobalMultipliers&& other) noexcept : BaseMultipliers(std::move(other)), lb(other.lb) { }
 
     GlobalMultipliers& operator=(const GlobalMultipliers& other) = default;
     GlobalMultipliers& operator=(GlobalMultipliers&& other) = default;
 
     GlobalMultipliers(SubInstance& subinst, LocalMultipliers mult) : BaseMultipliers(subinst.get_instance().get_nrows(), static_cast<real_t>(0.0)) {
 
-        for (idx_t i = 0; i < mult.size(); ++i) {
-            (*this)[subinst.get_global_row_idx(i)] = mult[i];
-        }
+        for (idx_t i = 0; i < mult.size(); ++i) { (*this)[subinst.get_global_row_idx(i)] = mult[i]; }
         lb = compute_lb(subinst.get_instance());
     }
 

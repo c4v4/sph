@@ -1,5 +1,5 @@
-#ifndef AC_CFT_INCLUDE_GREEDY_HPP
-#define AC_CFT_INCLUDE_GREEDY_HPP
+#ifndef SCP_INCLUDE_GREEDY_HPP_
+#define SCP_INCLUDE_GREEDY_HPP_
 
 #include <algorithm>
 #include <cassert>
