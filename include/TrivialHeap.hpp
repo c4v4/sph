@@ -14,6 +14,12 @@ public:
         --sz;
     }
 
+    inline void push_back(T elem) {  // delete me
+        assert(sz < Nm);
+        buf[sz] = elem;
+        ++sz;
+    }
+
     inline auto back() const {
         assert(sz > 0);
         return buf[sz - 1];
@@ -36,6 +42,13 @@ public:
             pop_back();
         }
 
+        insert(elem);
+        return true;
+    }
+
+    inline void insert(T elem) {
+        assert(sz < Nm);
+
         auto* ptr = end();
         while (ptr != begin() && Comp()(*(ptr - 1), elem)) {
             *(ptr) = *(ptr - 1);
@@ -43,8 +56,6 @@ public:
         }
         *ptr = elem;
         ++sz;
-
-        return true;
     }
 
     inline void clear() { sz = 0U; }

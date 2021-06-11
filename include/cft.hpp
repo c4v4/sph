@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#define NO_INLINE __attribute__((noinline))
+
 #ifdef VERBOSE
 #define IF_VERBOSE
 #else

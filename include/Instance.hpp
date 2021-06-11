@@ -384,7 +384,7 @@ public:
         assert(!is_corrupted());
     }
 
-    real_t price(const std::vector<real_t> &u_k) {
+    NO_INLINE real_t price(const std::vector<real_t> &u_k) {
 
         real_t global_LB = _price_active_cols(u_k, priced_cols);
 
@@ -637,6 +637,8 @@ private:
             }
         }
         _priced_cols.resize(p_idx);
+
+        std::sort(_priced_cols.begin(), _priced_cols.end(), [](const Priced_Col &c1, const Priced_Col &c2) { return c1.c_u < c2.c_u; });
     }
 
     real_t _price_active_cols(const std::vector<real_t> &u_k, Priced_Columns &_priced_cols) {
@@ -676,11 +678,11 @@ private:
         return global_LB;
     }
 
-    void _select_C0_cols(Priced_Columns &_priced_cols, std::vector<idx_t> &global_col_idxs) {
+    NO_INLINE void _select_C0_cols(Priced_Columns &_priced_cols, std::vector<idx_t> &global_col_idxs) {
         idx_t fivem = std::min<idx_t>(MIN_SOLCOST_COV * inst.get_active_rows_size(), _priced_cols.size());
         global_col_idxs.reserve(fivem);
 
-        // std::stable_sort(priced_cols.begin(), priced_cols.end(),
+        // std::stable_sort(_priced_cols.begin(), _priced_cols.end(),
         std::nth_element(_priced_cols.begin(), _priced_cols.begin() + fivem, _priced_cols.end(),
                          [](const Priced_Col &c1, const Priced_Col &c2) { return c1.sol_cost < c2.sol_cost; });
 
@@ -704,14 +706,14 @@ private:
         }
     }
 
-    void _select_C1_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs) {
+    NO_INLINE void _select_C1_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs) {
 
         idx_t fivem = std::min<idx_t>(MIN_COV * inst.get_active_rows_size(), _priced_cols.size());
         global_col_idxs.reserve(fivem);
 
-        // std::stable_sort(priced_cols.begin(), priced_cols.end(),
-        std::nth_element(_priced_cols.begin(), _priced_cols.begin() + fivem, _priced_cols.end(),
-                         [](const Priced_Col &c1, const Priced_Col &c2) { return c1.c_u < c2.c_u; });
+        std::sort(_priced_cols.begin(), _priced_cols.end(),
+                  // std::nth_element(_priced_cols.begin(), _priced_cols.begin() + fivem, _priced_cols.end(),
+                  [](const Priced_Col &c1, const Priced_Col &c2) { return c1.c_u < c2.c_u; });
 
         for (idx_t n = 0; n < fivem; n++) {
             assert(n < _priced_cols.size());
@@ -732,46 +734,57 @@ private:
         }
     }
 
-    void _select_C2_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs) {
+    NO_INLINE void _select_C2_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs) {
+
+        assert(std::is_sorted(_priced_cols.begin() + global_col_idxs.size(), _priced_cols.end(),
+                              [](const Priced_Col &c1, const Priced_Col &c2) { return c1.c_u < c2.c_u; }));
 
         idx_t fivem = std::min<idx_t>(MIN_COV * inst.get_active_rows_size(), _priced_cols.size());
         global_col_idxs.reserve(fivem);
 
         // check for still-uncovered rows
-        auto still_uncovered_rows = std::vector<idx_t>();
+        idx_t rows_to_cover = 0;
         for (idx_t gi = 0; gi < inst.get_nrows(); ++gi) {
             if (_is_global_row_active(gi)) {
                 _covering_times[gi] = MIN_COV - std::min<idx_t>(MIN_COV, _covering_times[gi]);
-                if (_covering_times[gi] > 0) { still_uncovered_rows.emplace_back(gi); }
+                rows_to_cover += static_cast<idx_t>(_covering_times[gi] > 0);
+            } else {
+                _covering_times[gi] = 0;
             }
         }
-        if (still_uncovered_rows.empty()) { return; }
 
-        // iterate over the remaining columns searching for the best covering
         for (auto &heap : best_cols) { heap.clear(); }
 
-        for (idx_t n = 0; n < _priced_cols.size(); ++n) {
-            if (_priced_cols.is_selected(n)) { continue; }
+        for (idx_t n = global_col_idxs.size(); n < _priced_cols.size(); ++n) {
+            assert(!_priced_cols.is_selected(n));
 
             InstCol &col = inst.get_col(_priced_cols[n].j);
             auto pair = std::make_pair(n, _priced_cols[n].c_u);
             for (idx_t gi : col) {
-                if (!_is_global_row_active(gi) || _covering_times[gi] <= 0) { continue; }
-                assert(gi < best_cols.size());
 
-                best_cols[gi].try_insert(pair);
+                if (_covering_times[gi] == 0) { continue; }
+
+                assert(gi < best_cols.size());
+                --_covering_times[gi];
+                best_cols[gi].push_back(pair);
+                // best_cols[gi].try_insert(pair);
+
+                rows_to_cover -= static_cast<idx_t>(_covering_times[gi] == 0);
+                if (rows_to_cover == 0) {
+                    assert(std::count(_covering_times.begin(), _covering_times.end(), 0) == _covering_times.size());
+                    break;
+                }
             }
         }
 
-        for (idx_t gi : still_uncovered_rows) {
-            for (auto [n, c_u] : best_cols[gi]) {
+        for (auto &heap : best_cols) {
+            for (auto [n, c_u] : heap) {
                 if (_priced_cols.is_selected(n)) { continue; }
 
                 idx_t gj = _priced_cols[n].j;
                 assert(gj < inst.get_ncols());
 
                 global_col_idxs.emplace_back(gj);
-                //_covering_times.cover_rows(*_priced_cols[n]);
 
                 _priced_cols.select(n);
             }
