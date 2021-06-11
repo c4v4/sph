@@ -13,7 +13,6 @@
 #include "MStar.hpp"
 #include "TrivialHeap.hpp"
 #include "cft.hpp"
-#include "queue"
 
 #define MIN_COV 5U
 #define MIN_SOLCOST_COV 2U
@@ -372,7 +371,11 @@ public:
 
         covering_times.reset_uncovered(inst.get_nrows());
         _select_C2_cols(priced_cols, covering_times, local_to_global_col_idxs);
+        // fmt::print("C2: {} ", local_to_global_col_idxs.size());
+        // auto old_s = local_to_global_col_idxs.size();
+
         _select_C0_cols(priced_cols, local_to_global_col_idxs);
+        // fmt::print("C0: {}\n", local_to_global_col_idxs.size() - old_s);
 
         replace_columns(local_to_global_col_idxs);
 
@@ -606,7 +609,10 @@ private:
             resize(ncols);
         }
 
-        inline void select(idx_t n) { (*this)[n].j = REMOVED_INDEX; }
+        inline void select(idx_t n) {
+            (*this)[n].j = REMOVED_INDEX;
+            (*this)[n].c_u = (*this)[n].sol_cost = std::numeric_limits<real_t>::max();
+        }
         inline bool is_selected(idx_t n) const { return (*this)[n].j == REMOVED_INDEX; }
     };
 
@@ -671,17 +677,16 @@ private:
     }
 
     void _select_C0_cols(Priced_Columns &_priced_cols, std::vector<idx_t> &global_col_idxs) {
-
         idx_t fivem = std::min<idx_t>(MIN_SOLCOST_COV * inst.get_active_rows_size(), _priced_cols.size());
         global_col_idxs.reserve(fivem);
 
-        // std::sort(priced_cols.begin(), priced_cols.end(), [](PricedCol& c1, PricedCol& c2) { return c1.sol_c < c2.sol_c; });
+        // std::stable_sort(priced_cols.begin(), priced_cols.end(),
         std::nth_element(_priced_cols.begin(), _priced_cols.begin() + fivem, _priced_cols.end(),
-                         [](Priced_Col &c1, Priced_Col &c2) { return c1.sol_cost < c2.sol_cost; });
+                         [](const Priced_Col &c1, const Priced_Col &c2) { return c1.sol_cost < c2.sol_cost; });
 
         if (_priced_cols[0].sol_cost == std::numeric_limits<real_t>::max()) { return; }
 
-        for (idx_t n = 0; n < fivem; n++) {
+        for (idx_t n = 0; n < fivem; ++n) {
             assert(n < _priced_cols.size());
 
             if (_priced_cols.is_selected(n) || _priced_cols[n].sol_cost == std::numeric_limits<real_t>::max()) { continue; }
@@ -704,8 +709,9 @@ private:
         idx_t fivem = std::min<idx_t>(MIN_COV * inst.get_active_rows_size(), _priced_cols.size());
         global_col_idxs.reserve(fivem);
 
+        // std::stable_sort(priced_cols.begin(), priced_cols.end(),
         std::nth_element(_priced_cols.begin(), _priced_cols.begin() + fivem, _priced_cols.end(),
-                         [](Priced_Col &c1, Priced_Col &c2) { return c1.c_u < c2.c_u; });
+                         [](const Priced_Col &c1, const Priced_Col &c2) { return c1.c_u < c2.c_u; });
 
         for (idx_t n = 0; n < fivem; n++) {
             assert(n < _priced_cols.size());
