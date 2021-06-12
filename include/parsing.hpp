@@ -53,7 +53,7 @@ InstanceData parse_scp_instance(const std::string& path) {
     inst.nrows = std::stoul(tokens[0]);
     const auto ncols = std::stoul(tokens[1]);
     inst.costs = std::vector<real_t>(ncols);
-    inst.solcosts = std::vector<real_t>(ncols, std::numeric_limits<real_t>::max());
+    inst.solcosts = std::vector<real_t>(ncols, REAL_MAX);
 
     auto j = 0UL;
     while (j < inst.costs.size()) {
@@ -111,7 +111,7 @@ InstanceData parse_rail_instance(const std::string& path) {
     inst.nrows = std::stoul(tokens[0]);
     const auto ncols = std::stoul(tokens[1]);
     inst.costs = std::vector<real_t>(ncols);
-    inst.solcosts = std::vector<real_t>(ncols, std::numeric_limits<real_t>::max());
+    inst.solcosts = std::vector<real_t>(ncols, REAL_MAX);
 
     for (auto j = 0UL; j < ncols; j++) {
 

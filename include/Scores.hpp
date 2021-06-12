@@ -12,7 +12,7 @@
 
 class ScoreData {
 public:
-    ScoreData() : gamma(std::numeric_limits<real_t>::max()), mu(REMOVED_INDEX), sigma(std::numeric_limits<real_t>::max()) { }
+    ScoreData() : gamma(REAL_MAX), mu(REMOVED_INDEX), sigma(REAL_MAX) { }
 
     ScoreData(real_t gamma_, idx_t mu_) : gamma(gamma_), mu(mu_), sigma(_score(gamma_, mu_)) { }
 
@@ -36,7 +36,7 @@ public:
     }
 
     void inserted_in_S() {
-        sigma = gamma = std::numeric_limits<real_t>::max();
+        sigma = gamma = REAL_MAX;
         mu = REMOVED_INDEX;
     }
 
@@ -45,7 +45,7 @@ public:
 
 private:
     static inline real_t _score(real_t gamma, idx_t mu) {
-        if (mu == 0 || mu == REMOVED_INDEX) { return std::numeric_limits<real_t>::max(); }
+        if (mu == 0 || mu == REMOVED_INDEX) { return REAL_MAX; }
         if (gamma > 0) { return gamma / static_cast<real_t>(mu); }
         return gamma * static_cast<real_t>(mu);
     }

@@ -19,7 +19,7 @@
 
 class Instance {
 public:
-    explicit Instance(const idx_t nrows_) : nrows(nrows_), active_rows(nrows, true), nactive_rows(nrows) { }
+    explicit Instance(const idx_t nrows_) : nrows(nrows_), active_rows(nrows, true), nactive_rows(nrows), fixed_cost(0.0) { }
 
     [[nodiscard]] inline auto get_ncols() const { return cols.size(); }
     [[nodiscard]] inline idx_t get_nrows() const { return nrows; }
@@ -42,6 +42,7 @@ public:
         active_cols.resize(cols.size());
         std::iota(active_cols.begin(), active_cols.end(), 0);
         fixed_cols.clear();
+        fixed_cost = 0.0;
     }
 
     void fix_columns(const std::vector<idx_t> &idxs) {
@@ -64,11 +65,7 @@ public:
         _fix_columns(idxs);
     }
 
-    auto compute_fixed_cost() {
-        real_t fixed_cost = 0.0;
-        for (idx_t j : fixed_cols) { fixed_cost += cols[j].get_cost(); }
-        return fixed_cost;
-    }
+    [[nodiscard]] real_t get_fixed_cost() { return fixed_cost; }
 
     inline bool is_row_active(idx_t gi) {
         assert(gi < nrows);
@@ -127,6 +124,9 @@ private:
 
         active_cols.resize(iok);
         fixed_cols = idxs;
+
+        fixed_cost = 0.0;
+        for (idx_t j : fixed_cols) { fixed_cost += cols[j].get_cost(); }
     }
 
     const idx_t nrows;
@@ -136,12 +136,14 @@ private:
 
     std::vector<bool> active_rows;
     idx_t nactive_rows;
+
+    real_t fixed_cost;
 };
 
 class SubInstance {
 
 public:
-    explicit SubInstance(Instance &inst_) : inst(inst_), best_cols(inst_.get_nrows()) { }
+    explicit SubInstance(Instance &inst_) : inst(inst_), best_cols(inst_.get_nrows()), fixed_cost(inst_.get_fixed_cost()) { }
 
     [[nodiscard]] inline auto get_ncols() const { return cols.size(); }
     [[nodiscard]] inline auto get_nrows() const { return rows.size(); }
@@ -166,14 +168,7 @@ public:
 
     [[nodiscard]] inline auto &get_instance() { return inst; }
 
-    [[nodiscard]] inline auto compute_fixed_cost() const {
-        real_t fixed_cost = inst.compute_fixed_cost();
-        for (idx_t j : fixed_cols_global_idxs) {
-            assert(std::find(inst.get_active_cols().begin(), inst.get_active_cols().end(), j) != inst.get_active_cols().end());
-            fixed_cost += inst.get_col(j).get_cost();
-        }
-        return fixed_cost;
-    }
+    [[nodiscard]] inline auto get_fixed_cost() const { return fixed_cost; }
 
     [[nodiscard]] inline auto is_corrupted() const {
         idx_t j_counter = 0;
@@ -262,11 +257,11 @@ public:
     void update_sol_cost(const std::vector<idx_t> &local_sol) {
 
         real_t sol_cost = std::accumulate(local_sol.begin(), local_sol.end(), 0.0, [&](real_t sum, idx_t lj) { return sum + cols[lj].get_cost(); });
-        sol_cost += compute_fixed_cost();
-        update_sol_cost(local_sol, sol_cost);
+        sol_cost += get_fixed_cost();
+        update_sol_costs(local_sol, sol_cost);
     }
 
-    void update_sol_cost(const std::vector<idx_t> &local_sol, real_t sol_cost) {
+    void update_sol_costs(const std::vector<idx_t> &local_sol, real_t sol_cost) {
 
         for (idx_t lj : local_sol) {
             InstCol &gcol = inst.get_col(local_to_global_col_idxs[lj]);
@@ -285,7 +280,7 @@ public:
     void add_cols_if_changed(const std::vector<idx_t> &local_sol) {
 
         real_t sol_cost = std::accumulate(local_sol.begin(), local_sol.end(), 0.0, [&](real_t sum, idx_t lj) { return sum + cols[lj].get_cost(); });
-        sol_cost += compute_fixed_cost();
+        sol_cost += get_fixed_cost();
 
         // fmt::print("solcost {}\n", sol_cost);
 
@@ -365,6 +360,7 @@ public:
         local_to_global_row_idxs.resize(li);
 
         fixed_cols_global_idxs.clear();
+        fixed_cost = inst.get_fixed_cost();
 
         _init_priced_cols(priced_cols);
         local_to_global_col_idxs.clear();
@@ -438,6 +434,9 @@ public:
                 global_to_local_row_idxs[gi] = REMOVED_INDEX;
             }
         }
+
+        fixed_cost = inst.get_fixed_cost();
+        for (idx_t gj : fixed_cols_global_idxs) { fixed_cost += inst.get_col(gj).get_cost(); }
 
         // compact rows
         idx_t li = 0;
@@ -611,7 +610,7 @@ private:
 
         inline void select(idx_t n) {
             (*this)[n].j = REMOVED_INDEX;
-            (*this)[n].c_u = (*this)[n].sol_cost = std::numeric_limits<real_t>::max();
+            (*this)[n].c_u = (*this)[n].sol_cost = REAL_MAX;
         }
         inline bool is_selected(idx_t n) const { return (*this)[n].j == REMOVED_INDEX; }
     };
@@ -686,12 +685,12 @@ private:
         std::nth_element(_priced_cols.begin(), _priced_cols.begin() + fivem, _priced_cols.end(),
                          [](const Priced_Col &c1, const Priced_Col &c2) { return c1.sol_cost < c2.sol_cost; });
 
-        if (_priced_cols[0].sol_cost == std::numeric_limits<real_t>::max()) { return; }
+        if (_priced_cols[0].sol_cost == REAL_MAX) { return; }
 
         for (idx_t n = 0; n < fivem; ++n) {
             assert(n < _priced_cols.size());
 
-            if (_priced_cols.is_selected(n) || _priced_cols[n].sol_cost == std::numeric_limits<real_t>::max()) { continue; }
+            if (_priced_cols.is_selected(n) || _priced_cols[n].sol_cost == REAL_MAX) { continue; }
 
             idx_t gj = _priced_cols[n].j;
             assert(gj < inst.get_ncols());
@@ -813,6 +812,8 @@ private:
 
     std::vector<TrivialHeap<std::pair<idx_t, real_t>, MIN_COV, Col_Comp>> best_cols;
     Priced_Columns priced_cols;
+
+    real_t fixed_cost;
 };
 
 #endif  // SCP_INCLUDE_INSTANCE_HPP_

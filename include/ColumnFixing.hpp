@@ -36,7 +36,7 @@ public:
 
         idx_t remaining_rows = subinst.fix_columns(S, u_star);
 
-        IF_VERBOSE { fmt::print("Fixed {} columns.\n", S.size()); }
+        // IF_VERBOSE { fmt::print("Fixed {} columns.\n", S.size()); }
 
         IF_DEBUG {
             assert(!subinst.is_corrupted());

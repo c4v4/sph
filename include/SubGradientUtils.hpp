@@ -7,7 +7,7 @@
 class StepSizeFactor {
 public:
     StepSizeFactor(real_t initial_value_ = 0.1, idx_t period = 20) : p(period), lambda(initial_value_),
-                                                                     wrst_LB(std::numeric_limits<real_t>::max()), best_LB(std::numeric_limits<real_t>::lowest()) { }
+                                                                     wrst_LB(REAL_MAX), best_LB(REAL_LOWEST) { }
 
     inline void update(real_t current_LB) {
         if (current_LB < wrst_LB) {
@@ -29,8 +29,8 @@ public:
             }
 
             p.restart();
-            best_LB = std::numeric_limits<real_t>::lowest();
-            wrst_LB = std::numeric_limits<real_t>::max();
+            best_LB = REAL_LOWEST;
+            wrst_LB = REAL_MAX;
         }
     }
 
@@ -38,8 +38,8 @@ public:
 
     inline void reset() {
         p.restart();
-        best_LB = std::numeric_limits<real_t>::lowest();
-        wrst_LB = std::numeric_limits<real_t>::max();
+        best_LB = REAL_LOWEST;
+        wrst_LB = REAL_MAX;
     }
 
 private:
@@ -77,7 +77,7 @@ private:
 
 class ExitCondition {
 public:
-    explicit ExitCondition(idx_t period_ = 300) : period(period_), counter(period_), LB_past(std::numeric_limits<real_t>::lowest()) { }
+    explicit ExitCondition(idx_t period_ = 300) : period(period_), counter(period_), LB_past(REAL_LOWEST) { }
 
     bool operator()(real_t LB) {
         if (--counter == 0) {

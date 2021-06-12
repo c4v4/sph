@@ -105,7 +105,7 @@ public:
             // start enumeration
             auto vars = make_array<bool, ENUM_THRESH>(true);
 
-            real_t UB = std::numeric_limits<real_t>::max();  // enum first tries to remove all the column in order
+            real_t UB = REAL_MAX;  // enum first tries to remove all the column in order
             std::array<bool, ENUM_THRESH> sol;
             _enumeration_removal(vars, redundant_cols.size(), M_star, 0.0, u_k, UB, sol);
 

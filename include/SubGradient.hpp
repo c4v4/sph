@@ -20,7 +20,7 @@ public:
 
     static LocalMultipliers u_greedy_init(const SubInstance& subinst) {
 
-        LocalMultipliers u_0(subinst.get_nrows(), std::numeric_limits<real_t>::max());
+        LocalMultipliers u_0(subinst.get_nrows(), REAL_MAX);
 
         // init multipliers
         for (auto i = 0UL; i < subinst.get_nrows(); ++i) {
@@ -81,7 +81,7 @@ private:
         auto T = PricingPeriod(10, std::min<idx_t>(1000UL, nrows / 3));        // pricing frequency
         auto time_to_exit = ExitCondition(300U);
 
-        LB_star = std::numeric_limits<real_t>::lowest();
+        LB_star = REAL_LOWEST;
 
         u = u_0;
         u_star = u_0;
@@ -128,7 +128,8 @@ private:
                 u_star = u;
             }
 
-            //fmt::print("[{:^4}] Lower Bound: {:.4} (best {:.4}), lambda {:.4}, S_cost {:.4}\n", iter, real_LB, LB_star, lambda.get(), S.compute_cost(subinst));
+            // fmt::print("[{:^4}] Lower Bound: {:.4} (best {:.4}), lambda {:.4}, S_cost {:.4}\n", iter, real_LB, LB_star, lambda.get(),
+            // S.compute_cost(subinst));
 
             if (real_LB > UB - HAS_INTEGRAL_COSTS) {
                 IF_VERBOSE { fmt::print(" WARNING: real_LB({}) > UB({}) - {}\n", real_LB, UB, HAS_INTEGRAL_COSTS); }
@@ -147,10 +148,10 @@ private:
             } else {
 
                 if (time_to_exit(LB_star)) {
-                    IF_VERBOSE {
-                        fmt::print("[{:^4}] Lower Bound: {:.4} (best {:.4}), lambda {:.4}, S_cost {:.4}\n", iter, real_LB, LB_star, lambda.get(),
-                                   S.compute_cost(subinst));
-                    }
+                    // IF_VERBOSE {
+                    //    fmt::print("[{:^4}] Lower Bound: {:.4} (best {:.4}), lambda {:.4}, S_cost {:.4}\n", iter, real_LB, LB_star, lambda.get(),
+                    //               S.compute_cost(subinst));
+                    //}
 
                     return;
                 }

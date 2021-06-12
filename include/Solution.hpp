@@ -81,9 +81,9 @@ public:
  */
 class GlobalSolution : public BaseSolution {
 public:
-    GlobalSolution() : cost(std::numeric_limits<real_t>::max()) { }
-    explicit GlobalSolution(idx_t size) : BaseSolution(size), cost(std::numeric_limits<real_t>::max()) { }
-    GlobalSolution(idx_t size, real_t val) : BaseSolution(size, val), cost(std::numeric_limits<real_t>::max()) { }
+    GlobalSolution() : cost(REAL_MAX) { }
+    explicit GlobalSolution(idx_t size) : BaseSolution(size), cost(REAL_MAX) { }
+    GlobalSolution(idx_t size, real_t val) : BaseSolution(size, val), cost(REAL_MAX) { }
     GlobalSolution(const GlobalSolution& other) : BaseSolution(other), cost(other.cost) { }
     GlobalSolution(GlobalSolution&& other)  noexcept : BaseSolution(std::move(other)), cost(other.cost) { }
 

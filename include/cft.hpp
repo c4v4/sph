@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#define NO_INLINE __attribute__((noinline))
+#define NO_INLINE  //__attribute__((noinline))
 
 #ifdef VERBOSE
 #define IF_VERBOSE
@@ -19,6 +19,9 @@
 
 typedef uint32_t idx_t;
 typedef float real_t;
+
+#define REAL_MAX (std::numeric_limits<real_t>::max())
+#define REAL_LOWEST (std::numeric_limits<real_t>::lowest())
 
 #define REMOVED_INDEX (std::numeric_limits<idx_t>::max())
 

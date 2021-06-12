@@ -28,32 +28,44 @@ public:
         }
 
         GlobalMultipliers u_star;
+        real_t best_LB = REAL_LOWEST;
 
         pi = PI_MIN;
 
         idx_t iter = 1;
         do {
-            // 2.
-            subinst.reset();
+            subinst.reset();  // 2.
 
             {
-                // 3. & 4.
-                auto [S, u] = three_phase(S_star.get_cost());
+                auto [S, u] = three_phase(S_star.get_cost());  // 3. & 4.
 
-                // 6.
                 assert(!(std::fabs(pi - PI_MIN) > 0.001 && inst.get_fixed_cols().empty()));
-                pi *= ALPHA;
+                pi *= ALPHA;  // 6.
 
-                // update best solution
-                if (S.get_cost() < S_star.get_cost()) {
-                    S_star = std::move(S);  // 5.
+                if (S.get_cost() < S_star.get_cost()) {  // update best solution
+                    S_star = std::move(S);               // 5.
 
                     // pi = PI_MIN;            // 6.
-                    pi = std::max(pi / (ALPHA * ALPHA), PI_MIN);
+                    pi = std::max(pi / (ALPHA * ALPHA), PI_MIN);  // 6.
+                    real_t best_LB = REAL_LOWEST;
                 }
 
-                // ?. update best lower bound
-                if (u.get_lb() > u_star.get_lb()) { u_star = std::move(u); }
+                if (iter == 1) { u_star = std::move(u); }
+                if (u.get_lb() > best_LB) {
+                    best_LB = u.get_lb();
+
+                    if (S_star.get_cost() - 1.0 <= BETA * best_LB) {
+                        IF_VERBOSE {
+                            fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
+                            fmt::print("║ Early Exit: β(={}) * LB(={}) > UB(={}) - 1\n", BETA, best_LB, S_star.get_cost());
+                            fmt::print("║ Active rows {}, active cols {}, pi {}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
+                            fmt::print("║ LB {}, UB {}, UB size {}\n", best_LB, S_star.get_cost(), S_star.size());
+                            fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
+                        }
+                        break;
+                    }
+                }  // ?. update best lower bound
+
             }  //(S and u are potentially been moved, better to encapsulate them into a block)
 
             // 7. Refinement Fix
@@ -89,14 +101,15 @@ public:
             IF_VERBOSE {
                 fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
                 fmt::print("║ Active rows {}, active cols {}, pi {}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
-                fmt::print("║ Best sol {}, cols {}\n", S_star.get_cost(), S_star.size());
+                fmt::print("║ LB {}, UB {}, UB size {}\n", best_LB, S_star.get_cost(), S_star.size());
                 fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
             }
-            assert(inst.compute_fixed_cost() <= S_star.get_cost());
-            ++iter;
-        } while (inst.get_active_rows_size() > 0 && S_star.get_cost() - 1.0 > std::ceil(BETA * u_star.get_lb()));
 
-        return std::move(S_star);  // messo il move solo x togliere l'errore poi lo possiam togliere
+            assert(inst.get_fixed_cost() <= S_star.get_cost());
+            ++iter;
+        } while (inst.get_active_rows_size() > 0);
+
+        return S_star;
     }
 
 private:
