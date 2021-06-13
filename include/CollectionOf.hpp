@@ -18,7 +18,6 @@ public:
 
 protected:
     IdxList(const idx_t* beg_, const idx_t* end_) : sz(end_ - beg_) { std::copy(beg_, end_, begin()); }
-
     IdxList(const IdxList& other) : sz(other.sz) { std::copy(other.begin(), other.end(), begin()); }
 
 public:
@@ -181,16 +180,16 @@ public:
         start = finish = end_of_storage = nullptr;
     }
 
-    [[nodiscard]] inline CollectionIter begin() { return CollectionIter(reinterpret_cast<Elem*>(start + offsets[0])); }
-    [[nodiscard]] inline CollectionIter end() { return ++CollectionIter(reinterpret_cast<Elem*>(start + offsets.back())); }
+    [[nodiscard]] inline CollectionIter begin() { return CollectionIter(reinterpret_cast<Elem*>(start)); }
+    [[nodiscard]] inline CollectionIter end() { return CollectionIter(reinterpret_cast<Elem*>(finish)); }
     [[nodiscard]] inline Elem& operator[](idx_t j) { return *reinterpret_cast<Elem*>(start + offsets[j]); }
     [[nodiscard]] inline Elem& back() { return *reinterpret_cast<Elem*>(start + offsets.back()); }
     [[nodiscard]] inline Elem* data() { return reinterpret_cast<Elem*>(start + offsets[0]); }
 
     [[nodiscard]] inline idx_t size() const { return offsets.size(); }
     [[nodiscard]] inline bool empty() const { return offsets.empty(); }
-    [[nodiscard]] inline const CollectionIter begin() const { return CollectionIter(reinterpret_cast<Elem*>(start + offsets[0])); }
-    [[nodiscard]] inline const CollectionIter end() const { return ++CollectionIter(reinterpret_cast<Elem*>(start + offsets.back())); }
+    [[nodiscard]] inline const CollectionIter begin() const { return CollectionIter(reinterpret_cast<Elem*>(start)); }
+    [[nodiscard]] inline const CollectionIter end() const { return CollectionIter(reinterpret_cast<Elem*>(finish)); }
     [[nodiscard]] inline const Elem& operator[](idx_t j) const { return *reinterpret_cast<Elem*>(start + offsets[j]); }
     [[nodiscard]] inline const Elem& back() const { return *reinterpret_cast<Elem*>(start + offsets.back()); }
     [[nodiscard]] inline const Elem* data() const { return reinterpret_cast<Elem*>(start); }
@@ -311,6 +310,6 @@ private:
 
 typedef CollectionOf<RowTempName> Rows;
 typedef CollectionOf<InstCol> Cols;
-typedef CollectionOf<SubInstCol> SmallCols;
+typedef CollectionOf<SubInstCol> SubInstCols;
 
 #endif

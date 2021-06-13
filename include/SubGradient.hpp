@@ -37,10 +37,10 @@ public:
     static LocalMultipliers u_perturbed_init(const LocalMultipliers& u_star, std::mt19937& rnd) {
 
         auto u_0 = LocalMultipliers(u_star.size());
-        auto dist = std::uniform_real_distribution<real_t>(-0.1, 0.1);
+        auto dist = std::uniform_real_distribution<real_t>(0.9, 1.1);
 
         idx_t u0size = u_0.size();
-        for (idx_t i = 0; i < u0size; i++) { u_0[i] = (1 + dist(rnd)) * u_star[i]; }
+        for (idx_t i = 0; i < u0size; i++) { u_0[i] = dist(rnd) * u_star[i]; }
 
         return u_0;
     }

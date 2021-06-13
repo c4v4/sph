@@ -802,7 +802,7 @@ private:
 
     Instance &inst;
     MStar covering_times;
-    SmallCols cols;
+    SubInstCols cols;
     std::vector<Row> rows;
     std::vector<idx_t> local_to_global_col_idxs;  // map local to original indexes
     std::vector<idx_t> fixed_cols_global_idxs;    // original indexes of locally fixed cols
