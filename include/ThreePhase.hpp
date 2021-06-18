@@ -43,15 +43,18 @@ public:
 
             IF_VERBOSE { fmt::print("┌─ 3-PHASE: iter {:2} ────────────────────────────────────────────────────────────────\n", iter); }
 
-            LocalSolution S_curr = greedy(u_k);
-            real_t S_curr_cost = S_curr.compute_cost(subinst);
-            assert(S_curr_cost > 0);
+            //LocalSolution S_curr = greedy(u_k);
+            //real_t S_curr_cost = S_curr.compute_cost(subinst);
+            //assert(S_curr_cost > 0);
+
+            const auto subgrad_UB = glo_UB_star - subinst.get_fixed_cost();
 
             // 1. SUBGRADIENT PHASE
-            u_k = subgradient.solve(S_curr_cost, u_k);    // use S_curr_cost because u_k refers to the current sub-problem
+            u_k = subgradient.solve(subgrad_UB, u_k);    // use S_curr_cost because u_k refers to the current sub-problem
             real_t local_LB = subgradient.get_best_LB();  // u_k.compute_lb(subinst);
             real_t global_LB = subinst.get_fixed_cost() + local_LB;
             if (iter == 1) { glo_u = GlobalMultipliers(subinst, u_k); }
+
 
             if (global_LB >= glo_UB_star - HAS_INTEGRAL_COSTS) {
                 IF_VERBOSE {
@@ -63,19 +66,30 @@ public:
                 break;
             }
 
+
             // 2. HEURISTIC PHASE
-            auto& u_list = subgradient.explore(S_curr_cost, u_k, EXPLORING_ITERS);
+            auto& u_list = subgradient.explore(subgrad_UB, u_k, EXPLORING_ITERS);
             u_list.emplace_back(u_k);
+
+            LocalSolution S_curr;
+            real_t S_curr_cost = REAL_MAX;
 
             for (LocalMultipliers& u : u_list) {
 
                 LocalSolution S = greedy(u);
+
+                IF_DEBUG {
+                    MStar cov;
+                    cov.reset_covered(subinst.get_cols(), S, subinst.get_nrows());
+                    assert(cov.get_uncovered() == 0);
+                }
 
                 real_t S_cost = S.compute_cost(subinst);
                 real_t gS_cost = subinst.get_fixed_cost() + S_cost;
                 subinst.update_sol_costs(S, gS_cost);
 
                 if (S_cost < S_curr_cost) {
+
                     S_curr = S;
                     S_curr_cost = S_cost;
                     u_star = u;
@@ -111,8 +125,21 @@ public:
                 break;
             }
 
+            IF_DEBUG {
+                MStar cov;
+                cov.reset_covered(subinst.get_cols(), S_curr, subinst.get_nrows());
+                assert(cov.get_uncovered() == 0);
+            }
+
             // 3. COLUMN FIXING
             auto glo_S_curr = GlobalSolution(subinst, S_curr);
+
+            IF_DEBUG {
+                MStar cov;
+                cov.reset_covered(subinst.get_instance().get_cols(), glo_S_curr, subinst.get_instance().get_nrows());
+                assert(cov.get_uncovered() == 0);
+            }
+
             remaining_rows = col_fixing(u_star, glo_S_curr);
 
             u_k = SubGradient::u_perturbed_init(u_star, rnd);
