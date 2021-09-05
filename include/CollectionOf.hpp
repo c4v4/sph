@@ -128,13 +128,16 @@ protected:
     real_t sol_c;
 };
 
-static_assert(sizeof(IdxList<SubInstCol>) == sizeof(IdxList<InstCol>) && sizeof(IdxList<InstCol>) == sizeof(idx_t));
+static_assert(sizeof(IdxList<SubInstCol>) == sizeof(IdxList<InstCol>));
+static_assert(sizeof(IdxList<InstCol>) == sizeof(idx_t));
 
-static_assert(sizeof(SubInstCol) == SubInstCol::MY_SIZE && SubInstCol::MY_SIZE == IdxList<SubInstCol>::MY_SIZE &&
-              IdxList<SubInstCol>::MY_SIZE == sizeof(idx_t) + sizeof(real_t) * 2U);
+static_assert(sizeof(SubInstCol) == SubInstCol::MY_SIZE);
+static_assert(SubInstCol::MY_SIZE == IdxList<SubInstCol>::MY_SIZE);
+static_assert(IdxList<SubInstCol>::MY_SIZE == std::max(alignof(real_t), sizeof(idx_t)) + sizeof(real_t) * 2U);
 
-static_assert(sizeof(InstCol) == InstCol::MY_SIZE && InstCol::MY_SIZE == IdxList<InstCol>::MY_SIZE &&
-              IdxList<InstCol>::MY_SIZE == sizeof(idx_t) + sizeof(real_t) * 2U);
+static_assert(sizeof(InstCol) == InstCol::MY_SIZE);
+static_assert(InstCol::MY_SIZE == IdxList<InstCol>::MY_SIZE);
+static_assert(IdxList<InstCol>::MY_SIZE == std::max(alignof(real_t), sizeof(idx_t)) + sizeof(real_t) * 2U);
 
 
 template <typename Elem>
