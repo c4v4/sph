@@ -10,6 +10,13 @@
 template <typename Elem>
 class CollectionOf;
 
+template <typename Elem, class Ptr>
+static Ptr* align_ptr(Ptr* src) {
+
+    size_t alignment = reinterpret_cast<uintptr_t>(reinterpret_cast<const void*>(src)) % alignof(Elem);
+    if (alignment > 0) { src += alignof(Elem) - alignment; }
+    return src;
+}
 
 template <typename Elem>
 class IdxList {
@@ -44,7 +51,7 @@ protected:
     idx_t sz;
 };
 
-class RowTempName : public IdxList<RowTempName> {
+/* class RowTempName : public IdxList<RowTempName> {
     friend class CollectionOf<RowTempName>;
 
 protected:
@@ -54,7 +61,7 @@ protected:
 
 public:
     RowTempName() { }
-};
+}; */
 
 
 class SubInstCol : public IdxList<SubInstCol> {
@@ -142,30 +149,35 @@ static_assert(IdxList<InstCol>::MY_SIZE == std::max(alignof(real_t), sizeof(idx_
 
 template <typename Elem>
 class CollectionOf {
-    static_assert(std::is_same_v<Elem, SubInstCol> || std::is_same_v<Elem, InstCol> || std::is_same_v<Elem, RowTempName>,
-                  "CollectionOf works only with Col or RowTempName as base element.");
+    static_assert(std::is_same_v<Elem, SubInstCol> || std::is_same_v<Elem, InstCol>, "CollectionOf works only with Col or RowTempName as base element.");
 
 public:
     class CollectionIter {
     public:
-        CollectionIter(Elem* base_) : base(base_) { }
+        CollectionIter(Elem* base_) : base(reinterpret_cast<Elem*>(align_ptr<Elem>(reinterpret_cast<char*>(base_)))) {
+            assert(reinterpret_cast<uintptr_t>(reinterpret_cast<const void*>(base)) % alignof(Elem) == 0);
+        }
 
         [[nodiscard]] inline auto& operator*() { return *base; }
 
         inline auto& operator++() {
-            base = reinterpret_cast<Elem*>(reinterpret_cast<char*>(base) + sizeof(Elem) + base->size() * sizeof(idx_t));
+            base = reinterpret_cast<Elem*>(align_ptr<Elem>(reinterpret_cast<char*>(base) + sizeof(Elem) + base->size() * sizeof(idx_t)));
+            assert(align_ptr<Elem>(base) == base);
             return *this;
         }
 
         inline auto operator++(int) {
             Elem* old_base = base;
-            base = reinterpret_cast<Elem*>(reinterpret_cast<char*>(base) + sizeof(Elem) + base->size() * sizeof(idx_t));
+            base = reinterpret_cast<Elem*>(align_ptr<Elem>(reinterpret_cast<char*>(base) + sizeof(Elem) + base->size() * sizeof(idx_t)));
+            assert(align_ptr<Elem>(base) == base);
             return CollectionIter(old_base);
         }
 
         [[nodiscard]] inline bool operator!=(CollectionIter& it2) const { return base != it2.base; }
 
         [[nodiscard]] inline bool operator==(CollectionIter& it2) const { return base == it2.base; }
+
+        [[nodiscard]] Elem* data() const { return base; }
 
     private:
         Elem* base;
@@ -195,11 +207,12 @@ public:
     [[nodiscard]] inline const CollectionIter end() const { return CollectionIter(reinterpret_cast<Elem*>(finish)); }
     [[nodiscard]] inline const Elem& operator[](idx_t j) const { return *reinterpret_cast<Elem*>(start + offsets[j]); }
     [[nodiscard]] inline const Elem& back() const { return *reinterpret_cast<Elem*>(start + offsets.back()); }
-    [[nodiscard]] inline const Elem* data() const { return reinterpret_cast<Elem*>(start); }
+    [[nodiscard]] inline const Elem* data() const { return reinterpret_cast<Elem*>(align_ptr<Elem>(start)); }
 
     inline void clear() {
         finish = start;
         offsets.clear();
+        assert(!is_corrupted());
     }
 
     inline void reserve(idx_t new_ncols) {
@@ -210,6 +223,7 @@ public:
 
         buffer_allocate(new_ncols * avg_col_size + 1);
         offsets.reserve(new_ncols);
+        assert(!is_corrupted());
     }
 
     template <typename iter, typename... Args>
@@ -217,15 +231,15 @@ public:
 
         idx_t col_size = end_ - beg_;
         idx_t col_storage = sizeof(Elem) + col_size * sizeof(idx_t);
-        char* new_finish = finish + col_storage;
+        char* new_finish = align_ptr<Elem>(finish) + col_storage;
 
         buffer_check_size(new_finish);
+        Elem* elem = new (align_ptr<Elem>(finish)) Elem(beg_, end_, std::forward<Args>(args)...);
 
-        Elem* elem = new (finish) Elem(beg_, end_, std::forward<Args>(args)...);
-        assert(reinterpret_cast<char*>(elem) == finish);
-
-        offsets.push_back(finish - start);
+        offsets.push_back(align_ptr<Elem>(finish) - start);
         finish = new_finish;
+
+        assert(!is_corrupted());
 
         return *elem;
     }
@@ -234,15 +248,15 @@ public:
 
         idx_t col_size = other.size();
         idx_t col_storage = sizeof(Elem) + col_size * sizeof(idx_t);
-        char* new_finish = finish + col_storage;
+        char* new_finish = align_ptr<Elem>(finish) + col_storage;
 
         buffer_check_size(new_finish);
+        Elem* elem = new (align_ptr<Elem>(finish)) Elem(other);
 
-        Elem* elem = new (finish) Elem(other);
-        assert(reinterpret_cast<char*>(elem) == finish);
-
-        offsets.push_back(finish - start);
+        offsets.push_back(align_ptr<Elem>(finish) - start);
         finish = new_finish;
+
+        assert(!is_corrupted());
 
         return *elem;
     }
@@ -255,29 +269,30 @@ public:
     inline Elem& new_col_create(Args&&... args) {
         Elem& elem = buffer_emplace_back<Elem>(std::forward<Args>(args)...);
         offsets.push_back(reinterpret_cast<char*>(std::addressof(elem)) - start);
+        assert(!is_corrupted());
         return elem;
     }
 
     inline void new_col_push_back(idx_t idx) {
         buffer_emplace_back<idx_t>(idx);
         ++back().sz;
+        assert(!is_corrupted());
     }
 
     inline void new_col_discard() {
         finish = reinterpret_cast<char*>(offsets.back());
         offsets.pop_back();
+        assert(!is_corrupted());
     }
 
 
 private:
     template <typename T, typename... Args>
     inline T& buffer_emplace_back(Args&&... args) {
-        char* new_finish = finish + sizeof(T);
+        char* new_finish = align_ptr<T>(finish) + sizeof(T);
 
         buffer_check_size(new_finish);
-
-        T* elem = new (finish) T(std::forward<Args>(args)...);
-        assert(reinterpret_cast<char*>(elem) == finish);
+        T* elem = new (align_ptr<T>(finish)) T(std::forward<Args>(args)...);
 
         finish = new_finish;
 
@@ -304,6 +319,48 @@ private:
         assert(start && finish && end_of_storage);
     }
 
+#define CHECK_RET is_corrupted_printed()
+    //#define CHECK_RET true
+
+    bool is_corrupted() {
+
+        if (align_ptr<Elem>(begin().data()) != begin().data()) { return CHECK_RET; }
+        if (!empty() && align_ptr<Elem>(begin().data()) != reinterpret_cast<Elem*>(start + offsets[0])) { return CHECK_RET; }
+        if (align_ptr<Elem>(end().data()) != end().data()) { return CHECK_RET; }
+
+        idx_t counter = 0;
+        for (Elem& elem : *this) {
+            if (align_ptr<Elem>(std::addressof(elem)) != std::addressof(elem)) { return CHECK_RET; }
+            if (++counter > size()) { return CHECK_RET; }
+        }
+        return false;
+    }
+
+    bool is_corrupted_printed() {
+
+        fmt::print("begin {} {}\n", (void*)begin().data(), (void*)align_ptr<Elem>(begin().data()));
+        if (align_ptr<Elem>(begin().data()) != begin().data()) { return true; }
+
+        if (!empty()) { fmt::print("offset begin {} {}\n", (void*)begin().data(), (void*)(start + offsets[0])); }
+        if (!empty() && align_ptr<Elem>(begin().data()) != reinterpret_cast<Elem*>(start + offsets[0])) { return true; }
+
+        fmt::print("end {} {}\n", (void*)end().data(), (void*)align_ptr<Elem>(end().data()));
+        if (align_ptr<Elem>(end().data()) != end().data()) { return true; }
+
+        idx_t counter = 0;
+        for (Elem& elem : *this) {
+            fmt::print("{} ", (void*)std::addressof(elem));
+            if (align_ptr<Elem>(std::addressof(elem)) != std::addressof(elem)) { return true; }
+            if (++counter > size()) {
+                fmt::print("\n");
+                return true;
+            }
+        }
+        fmt::print("\n");
+
+        return false;
+    }
+
     char* start = nullptr;
     char* finish = nullptr;
     char* end_of_storage = nullptr;
@@ -311,7 +368,8 @@ private:
     std::vector<size_t> offsets;
 };
 
-typedef CollectionOf<RowTempName> Rows;
+
+// typedef CollectionOf<RowTempName> Rows;
 typedef CollectionOf<InstCol> Cols;
 typedef CollectionOf<SubInstCol> SubInstCols;
 
