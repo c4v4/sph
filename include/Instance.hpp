@@ -11,11 +11,13 @@
 #include "CollectionOf.hpp"
 #include "IndexList.hpp"
 #include "MStar.hpp"
+#include "Stopwatch.hpp"
 #include "TrivialHeap.hpp"
 #include "cft.hpp"
 
-#define MIN_COV 5U
-#define MIN_SOLCOST_COV 2U
+#define MIN_COV 4U
+#define MIN_SOLCOST_COV 4U
+#define HARD_CAP 15000U
 
 class Instance {
 public:
@@ -108,6 +110,9 @@ public:
         return inserted_cols_idxs;
     }
 
+    void set_timelimit(double seconds) { timelimit = Timer(seconds); }
+    [[nodiscard]] Timer &get_timelimit() { return timelimit; }
+
 private:
     void _fix_columns(const std::vector<idx_t> &idxs) {
 
@@ -138,6 +143,8 @@ private:
     idx_t nactive_rows;
 
     real_t fixed_cost;
+
+    Timer timelimit;
 };
 
 class SubInstance {
@@ -169,6 +176,9 @@ public:
     [[nodiscard]] inline auto &get_instance() { return inst; }
 
     [[nodiscard]] inline auto get_fixed_cost() const { return fixed_cost; }
+
+    [[nodiscard]] Timer &get_timelimit() { return inst.get_timelimit(); }
+
 
     [[nodiscard]] inline auto is_corrupted() const {
         idx_t j_counter = 0;
@@ -678,7 +688,7 @@ private:
     }
 
     NO_INLINE void _select_C0_cols(Priced_Columns &_priced_cols, std::vector<idx_t> &global_col_idxs) {
-        idx_t fivem = std::min<idx_t>(MIN_SOLCOST_COV * inst.get_active_rows_size(), _priced_cols.size());
+        idx_t fivem = std::min<idx_t>(HARD_CAP, std::min<idx_t>(MIN_SOLCOST_COV * inst.get_active_rows_size(), _priced_cols.size()));
         global_col_idxs.reserve(fivem);
 
         // std::stable_sort(_priced_cols.begin(), _priced_cols.end(),
@@ -707,7 +717,7 @@ private:
 
     NO_INLINE void _select_C1_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs) {
 
-        idx_t fivem = std::min<idx_t>(MIN_COV * inst.get_active_rows_size(), _priced_cols.size());
+        idx_t fivem = std::min<idx_t>(HARD_CAP, std::min<idx_t>(MIN_COV * inst.get_active_rows_size(), _priced_cols.size()));
         global_col_idxs.reserve(fivem);
 
         std::sort(_priced_cols.begin(), _priced_cols.end(),
@@ -738,14 +748,16 @@ private:
         assert(std::is_sorted(_priced_cols.begin() + global_col_idxs.size(), _priced_cols.end(),
                               [](const Priced_Col &c1, const Priced_Col &c2) { return c1.c_u < c2.c_u; }));
 
-        idx_t fivem = std::min<idx_t>(MIN_COV * inst.get_active_rows_size(), _priced_cols.size());
+        idx_t nrows = get_nrows() == 0 ? inst.get_nrows() : get_nrows();
+        idx_t min_cov = std::min<idx_t>(MIN_COV, HARD_CAP / nrows);
+        idx_t fivem = std::min<idx_t>(min_cov * inst.get_active_rows_size(), _priced_cols.size());
         global_col_idxs.reserve(fivem);
 
         // check for still-uncovered rows
         idx_t rows_to_cover = 0;
         for (idx_t gi = 0; gi < inst.get_nrows(); ++gi) {
             if (_is_global_row_active(gi)) {
-                _covering_times[gi] = MIN_COV - std::min<idx_t>(MIN_COV, _covering_times[gi]);
+                _covering_times[gi] = min_cov - std::min<idx_t>(min_cov, _covering_times[gi]);
                 rows_to_cover += static_cast<idx_t>(_covering_times[gi] > 0);
             } else {
                 _covering_times[gi] = 0;

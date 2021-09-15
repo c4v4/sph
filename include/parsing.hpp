@@ -165,10 +165,9 @@ InstanceData parse_cvrp_instance(const std::string& path) {
 
     inst.matbeg.emplace_back(inst.matval.size());
 
-    auto warmstart = std::vector<idx_t>();
     std::getline(in, line);
     tokens = split(line, ' ');
-    for (const auto& v : tokens) { warmstart.emplace_back(std::stoul(v)); }
+    for (const auto& v : tokens) { inst.warmstart.emplace_back(std::stoul(v)); }
 
     return inst;
 }

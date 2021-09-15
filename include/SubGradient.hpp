@@ -93,6 +93,7 @@ private:
         std::vector<std::pair<idx_t, real_t>> delta_u;
 
         for (idx_t iter = 0; iter < max_iter; ++iter) {
+            if (subinst.get_timelimit().exceeded_tlim()) { break; }
 
             lambda.update(real_LB);
 
@@ -160,7 +161,7 @@ private:
                 if (T.reached()) {
                     const auto global_LB = subinst.price(u);
                     T.reset(global_LB, real_LB, UB);
-                    // fmt::print("Pricing: global {}, local {}\n", global_LB, real_LB);
+                    //fmt::print("Pricing: global {}, local {}\n", global_LB, real_LB);
 
                     LB_star = real_LB = lb_maintainer.compute(subinst, u);
                 }

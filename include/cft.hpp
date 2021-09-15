@@ -18,7 +18,7 @@
 #endif
 
 typedef uint32_t idx_t;
-typedef float real_t;
+typedef double real_t;
 
 #define REAL_MAX (std::numeric_limits<real_t>::max())
 #define REAL_LOWEST (std::numeric_limits<real_t>::lowest())
