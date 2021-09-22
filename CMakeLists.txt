@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(AC-CFT)
+project(SPH)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -43,6 +43,6 @@ endif()
 
 include_directories(include)
 
-add_executable(accft ${SOURCE})
+add_executable(sph ${SOURCE})
 
-target_link_libraries(accft PUBLIC ${LIBRARIES})
+target_link_libraries(sph PUBLIC ${LIBRARIES})
