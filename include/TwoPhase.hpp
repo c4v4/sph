@@ -17,10 +17,12 @@
 #include "Stopwatch.hpp"
 #include "SubGradient.hpp"
 #include "cft.hpp"
+#define SHORT_T_LIM 10.0
+#define LONG_T_LIM(TOTAL_TIME) (TOTAL_TIME / 2.0)
 
 class TwoPhase {
 public:
-    TwoPhase(SubInstance& subinst_) : subinst(subinst_), subgradient(subinst_) { }
+    TwoPhase(SubInstance& subinst_) : subinst(subinst_), subgradient(subinst_), exact_time_limit(LONG_T_LIM(subinst.get_timelimit().seconds_until_end())) { }
 
     GlobalSolution operator()(const real_t global_UB, GlobalSolution& S_star) {
 
@@ -55,9 +57,8 @@ private:
         real_t S_init_cost = S_init.compute_cost(subinst);
         IF_VERBOSE { fmt::print("│ Initial solution value {} (global: {})\n", S_init_cost, S_init_cost + fixed_cost); }
 
-        if (exact_time_limit < 0.0) { exact_time_limit = subinst.get_timelimit().seconds_until_end() / 2.0; }
         LocalSolution S = exact.build_and_opt(subinst, S_init, exact_time_limit);
-        exact_time_limit = 10.0;
+        exact_time_limit = SHORT_T_LIM;
 
         if (S.size() > 0) {
 
@@ -92,7 +93,7 @@ private:
     SubGradient subgradient;
     ExactSolver exact;
 
-    double exact_time_limit = -1.0;
+    double exact_time_limit;
 
     GlobalMultipliers glo_u;
 };
