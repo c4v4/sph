@@ -1,8 +1,8 @@
-#ifndef SCP_INCLUDE_COLUMNFIXING_HPP_
-#define SCP_INCLUDE_COLUMNFIXING_HPP_
+#ifndef SPH_INCLUDE_COLUMNFIXING_HPP_
+#define SPH_INCLUDE_COLUMNFIXING_HPP_
 
 #include "Greedy.hpp"
-#include "Instance.hpp"
+#include "SubInstance.hpp"
 #include "cft.hpp"
 
 #define Q_THRESHOLD (-0.001)

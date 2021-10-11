@@ -1,12 +1,12 @@
-#ifndef SCP_INCLUDE_RENDUNDACYREMOVAL_HPP_
-#define SCP_INCLUDE_RENDUNDACYREMOVAL_HPP_
+#ifndef SPH_INCLUDE_RENDUNDACYREMOVAL_HPP_
+#define SPH_INCLUDE_RENDUNDACYREMOVAL_HPP_
 
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <vector>
 
-#include "Instance.hpp"
+#include "SubInstance.hpp"
 #include "LowerBound.hpp"
 #include "MStar.hpp"
 #include "Scores.hpp"

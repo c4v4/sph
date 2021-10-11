@@ -1,7 +1,11 @@
-#ifndef SCP_INCLUDE_COLUMNS_HPP_
-#define SCP_INCLUDE_COLUMNS_HPP_
+#ifndef SPH_INCLUDE_COLUMNS_HPP_
+#define SPH_INCLUDE_COLUMNS_HPP_
+#include <fmt/core.h>
+#include <stddef.h>
+
+#include <algorithm>
 #include <cassert>
-#include <vector>
+#include <numeric>
 
 #include "cft.hpp"
 

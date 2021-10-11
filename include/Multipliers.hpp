@@ -1,9 +1,8 @@
-#ifndef SCP_INCLUDE_MULTIPLIERS_HPP_
-#define SCP_INCLUDE_MULTIPLIERS_HPP_
+#ifndef SPH_INCLUDE_MULTIPLIERS_HPP_
+#define SPH_INCLUDE_MULTIPLIERS_HPP_
 #include <vector>
 
 #include "Instance.hpp"
-#include "LowerBound.hpp"
 #include "cft.hpp"
 
 class LocalMultipliers : public std::vector<real_t> {

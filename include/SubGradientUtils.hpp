@@ -1,8 +1,8 @@
-#ifndef SCP_INCLUDE_SUBGRADIENTUTILS_HPP_
-#define SCP_INCLUDE_SUBGRADIENTUTILS_HPP_
+#ifndef SPH_INCLUDE_SUBGRADIENTUTILS_HPP_
+#define SPH_INCLUDE_SUBGRADIENTUTILS_HPP_
 
 #include "Counter.hpp"
-#include "Instance.hpp"
+#include "SubInstance.hpp"
 #include "cft.hpp"
 class StepSizeFactor {
 public:

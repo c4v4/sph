@@ -1,5 +1,5 @@
-#ifndef SCP_INCLUDE_CFT_HPP_
-#define SCP_INCLUDE_CFT_HPP_
+#ifndef SPH_INCLUDE_CFT_HPP_
+#define SPH_INCLUDE_CFT_HPP_
 
 #include <cstdint>
 
@@ -27,4 +27,4 @@ typedef double real_t;
 
 #define HAS_INTEGRAL_COSTS 1.0  // 1.0 if yes , 0.0 if no
 
-#endif  // SCP_INCLUDE_CFT_HPP_
+#endif  // SPH_INCLUDE_CFT_HPP_

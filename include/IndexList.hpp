@@ -1,5 +1,5 @@
-#ifndef SCP_INCLUDE_INDEXLIST_HPP_
-#define SCP_INCLUDE_INDEXLIST_HPP_
+#ifndef SPH_INCLUDE_INDEXLIST_HPP_
+#define SPH_INCLUDE_INDEXLIST_HPP_
 
 #include <algorithm>
 #include <vector>

@@ -1,5 +1,5 @@
-#ifndef SCP_INCLUDE_MSTAR_HPP_
-#define SCP_INCLUDE_MSTAR_HPP_
+#ifndef SPH_INCLUDE_MSTAR_HPP_
+#define SPH_INCLUDE_MSTAR_HPP_
 
 #include "IndexList.hpp"
 #include "cft.hpp"

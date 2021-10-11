@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
     Refinement cft(instance, rnd);
 
     auto solution = cft(data.warmstart);
-    
+
     real_t sol_cost = 0.0;
     for (auto j : solution) { sol_cost += instance.get_col(j).get_cost(); }
     fmt::print("Solution (cost {}):\n{}\n", sol_cost, fmt::join(solution, ", "));

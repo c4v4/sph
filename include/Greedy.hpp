@@ -1,11 +1,11 @@
-#ifndef SCP_INCLUDE_GREEDY_HPP_
-#define SCP_INCLUDE_GREEDY_HPP_
+#ifndef SPH_INCLUDE_GREEDY_HPP_
+#define SPH_INCLUDE_GREEDY_HPP_
 
 #include <algorithm>
 #include <cassert>
 #include <vector>
 
-#include "Instance.hpp"
+#include "SubInstance.hpp"
 #include "MStar.hpp"
 #include "RedundancyRemoval.hpp"
 #include "Scores.hpp"

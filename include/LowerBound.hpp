@@ -1,15 +1,15 @@
-#ifndef SCP_INCLUDE_LOWERBOUND_HPP_
-#define SCP_INCLUDE_LOWERBOUND_HPP_
+#ifndef SPH_INCLUDE_LOWERBOUND_HPP_
+#define SPH_INCLUDE_LOWERBOUND_HPP_
 
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <vector>
 
-#include "Instance.hpp"
 #include "MStar.hpp"
-#include "Scores.hpp"
+#include "Multipliers.hpp"
 #include "Solution.hpp"
+#include "SubInstance.hpp"
 #include "cft.hpp"
 
 /**

@@ -1,8 +1,8 @@
-#ifndef SCP_INCLUDE_SOLUTION_HPP_
-#define SCP_INCLUDE_SOLUTION_HPP_
+#ifndef SPH_INCLUDE_SOLUTION_HPP_
+#define SPH_INCLUDE_SOLUTION_HPP_
 #include <vector>
 
-#include "Instance.hpp"
+#include "SubInstance.hpp"
 #include "cft.hpp"
 
 /**

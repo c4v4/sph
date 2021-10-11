@@ -1,10 +1,12 @@
-#ifndef SCP_INCLUDE_EXACTSOLVER_HPP_
-#define SCP_INCLUDE_EXACTSOLVER_HPP_
+#ifndef SPH_INCLUDE_EXACTSOLVER_HPP_
+#define SPH_INCLUDE_EXACTSOLVER_HPP_
 
+#include <fmt/core.h>
+#include <fmt/ranges.h>
 #include <ilcplex/ilocplex.h>
 
-#include "Instance.hpp"
 #include "Solution.hpp"
+#include "SubInstance.hpp"
 #include "cft.hpp"
 
 #define RESIZE_UP(vec, sz) \

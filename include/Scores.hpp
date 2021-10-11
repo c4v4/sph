@@ -1,9 +1,9 @@
-#ifndef SCP_INCLUDE_SCORE_HPP
-#define SCP_INCLUDE_SCORE_HPP
+#ifndef SPH_INCLUDE_SCORE_HPP
+#define SPH_INCLUDE_SCORE_HPP
 
 #include <numeric>
 
-#include "Instance.hpp"
+#include "SubInstance.hpp"
 #include "MStar.hpp"
 #include "Multipliers.hpp"
 #include "Solution.hpp"
