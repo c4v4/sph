@@ -15,12 +15,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OPT_FLAGS}")
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(SOURCE  
-    src/main.cpp
-    src/Instance.cpp include/Instance.hpp
-    src/SubInstance.cpp include/SubInstance.hpp
-    src/Refinement.cpp include/Refinement.hpp
-    src/TwoPhase.cpp include/TwoPhase.hpp)
+set(SOURCE src/main.cpp)
 
 set(LIBRARIES fmt pthread dl m)
 
