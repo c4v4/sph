@@ -1,7 +1,6 @@
 #ifndef SPH_INCLUDE_MSTAR_HPP_
 #define SPH_INCLUDE_MSTAR_HPP_
 
-#include "IndexList.hpp"
 #include "cft.hpp"
 class MStar {
 public:
@@ -14,14 +13,12 @@ public:
         M_star.assign(nrows, 0);
     }
 
-    /// inline void reset_covered(const std::vector<Column>& cols, idx_t nrows) {
     template<typename Collection>
     inline void reset_covered(const Collection& cols, idx_t nrows) {
         reset_uncovered(nrows);
         for (auto& j_col : cols) { cover_rows(j_col); }
     }
 
-    /// inline void reset_covered(const std::vector<Column>& cols, const std::vector<idx_t>& indexes, idx_t nrows) {
     template<typename Collection>
     inline void reset_covered(const Collection& cols, const std::vector<idx_t>& indexes, idx_t nrows) {
         reset_uncovered(nrows);

@@ -55,19 +55,6 @@ protected:
     idx_t sz;
 };
 
-/* class RowTempName : public IdxList<RowTempName> {
-    friend class CollectionOf<RowTempName>;
-
-protected:
-    template <typename iter>
-    RowTempName(iter beg_, iter end_) : IdxList<RowTempName>(beg_, end_) { }
-    RowTempName(const RowTempName& other) : IdxList<RowTempName>(other) { }
-
-public:
-    RowTempName() { }
-}; */
-
-
 class SubInstCol : public IdxList<SubInstCol> {
     friend class CollectionOf<SubInstCol>;
 
@@ -109,52 +96,13 @@ protected:
     real_t c_u;
 };
 
-class InstCol : public IdxList<InstCol> {
-    friend class CollectionOf<InstCol>;
-
-protected:
-    InstCol(const idx_t* beg_, const idx_t* end_, real_t c_ = 0.0, real_t sol_c_ = 0.0) : IdxList<InstCol>(beg_, end_), c(c_), sol_c(sol_c_) { }
-    InstCol(const InstCol& other) : IdxList<InstCol>(other), c(other.c), sol_c(other.sol_c) { }
-
-public:
-    InstCol(real_t c_ = 0.0, real_t sol_c_ = 0.0) : c(c_), sol_c(sol_c_) { }
-
-    [[nodiscard]] inline real_t get_cost() const { return c; }
-    inline void set_cost(real_t new_c) { c = new_c; }
-
-    [[nodiscard]] inline real_t get_solcost() const { return sol_c; }
-    inline void set_solcost(real_t new_c) { sol_c = new_c; }
-
-    [[nodiscard]] inline real_t compute_lagr_cost(const std::vector<real_t>& u) const {
-        real_t local_c_u = c;
-        for (idx_t i : *this) {
-            assert(i < u.size());
-            local_c_u -= u[i];
-        }
-        return local_c_u;
-    }
-
-protected:
-    real_t c;
-    real_t sol_c;
-};
-
-static_assert(sizeof(IdxList<SubInstCol>) == sizeof(IdxList<InstCol>));
-static_assert(sizeof(IdxList<InstCol>) == sizeof(idx_t));
-
 static_assert(sizeof(SubInstCol) == SubInstCol::MY_SIZE);
 static_assert(SubInstCol::MY_SIZE == IdxList<SubInstCol>::MY_SIZE);
 static_assert(IdxList<SubInstCol>::MY_SIZE == std::max(alignof(real_t), sizeof(idx_t)) + sizeof(real_t) * 2U);
 
-static_assert(sizeof(InstCol) == InstCol::MY_SIZE);
-static_assert(InstCol::MY_SIZE == IdxList<InstCol>::MY_SIZE);
-static_assert(IdxList<InstCol>::MY_SIZE == std::max(alignof(real_t), sizeof(idx_t)) + sizeof(real_t) * 2U);
-
 
 template <typename Elem>
 class CollectionOf {
-    static_assert(std::is_same_v<Elem, SubInstCol> || std::is_same_v<Elem, InstCol>, "CollectionOf works only with Col or RowTempName as base element.");
-
 public:
     class CollectionIter {
     public:
@@ -374,7 +322,7 @@ private:
 
 
 // typedef CollectionOf<RowTempName> Rows;
-typedef CollectionOf<InstCol> Cols;
+// typedef CollectionOf<InstCol> Cols;
 typedef CollectionOf<SubInstCol> SubInstCols;
 
 #endif

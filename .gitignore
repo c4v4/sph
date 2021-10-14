@@ -40,7 +40,7 @@ cmake-build-release/*
 .idea/*
 .vscode/*
 
-
+#Just too big for github
 instances/cvrp/A2_z306601_cplex306094.scp
 instances/cvrp/B2_z370473_cplex370151.scp
 instances/cvrp/F2_z4664483_cplex4664283.scp

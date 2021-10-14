@@ -3,7 +3,7 @@
 
 #include <fmt/core.h>
 #include <fmt/ranges.h>
-#include <ilcplex/ilocplex.h>
+#include <ilcplex/cplex.h>
 
 #include "Solution.hpp"
 #include "SubInstance.hpp"
@@ -15,15 +15,15 @@
 #define ASSIGN_UP(vec, sz, val) \
     if (vec.size() < sz) { vec.assign(sz, val); }
 
-#define SET_INT(P, VAL)                                                           \
-    if (int res = 0; (res = CPXsetintparam(env, P, VAL))) {                       \
-        fmt::print(stderr, "Error while setting " #P " parameter at " #VAL "\n"); \
-        return res;                                                               \
+#define SET_INT(P, VAL)                                                            \
+    if (int res = 0; (res = CPXsetintparam(env, P, VAL))) {                        \
+        fmt::print(stderr, "Error while setting " #P " parameter at  {} \n", VAL); \
+        return res;                                                                \
     }
 
 #define SET_DBL(P, VAL)                                                           \
     if (int res = 0; (res = CPXsetdblparam(env, P, VAL))) {                       \
-        fmt::print(stderr, "Error while setting " #P " parameter at " #VAL "\n"); \
+        fmt::print(stderr, "Error while setting " #P " parameter at {} \n", VAL); \
         return res;                                                               \
     }
 
@@ -33,25 +33,25 @@ public:
 
     ~ExactSolver() { CPXcloseCPLEX(&env); }
 
-    LocalSolution build_and_opt(SubInstance& subinst, LocalSolution& warmstart, double tlim) {
+    LocalSolution build_and_opt(SubInstance& subinst, LocalSolution& warmstart, Timer& time_limit) {
 
         lp = CPXcreateprob(env, nullptr, "exact");
         int res = 0;
 
         if ((res = build_model(subinst))) {
-            fmt::print(stderr, "Error while building the model (errno: {}})\n", res);
+            fmt::print(stderr, "Error while building the model (errno: {})\n", res);
             return LocalSolution();
         }
 
         if ((res = set_warmstart(warmstart))) { fmt::print(stderr, "Error while setting warmstart (errno: {})\n", res); }
 
-        if ((res = set_CPX_params(tlim))) {
-            fmt::print(stderr, "Error while setting parameter (errno: {}})\n", res);
+        if ((res = set_CPX_params(time_limit.seconds_until_end()))) {
+            fmt::print(stderr, "Error while setting parameter (errno: {})\n", res);
             return LocalSolution();
         }
 
         IF_DEBUG {
-            if ((res = CPXwriteprob(env, lp, "model.lp", nullptr))) { fmt::print(stderr, "Error while writing problem file(errno: {}})\n", res); }
+            if ((res = CPXwriteprob(env, lp, "model.lp", nullptr))) { fmt::print(stderr, "Error while writing problem file(errno: {})\n", res); }
         }
 
         if ((res = CPXmipopt(env, lp))) {
@@ -172,6 +172,10 @@ private:
         SET_DBL(CPXPARAM_MIP_PolishAfter_Time, tlim * 0.5);
         SET_DBL(CPXPARAM_TimeLimit, tlim);
         SET_INT(CPXPARAM_Emphasis_MIP, CPX_MIPEMPHASIS_OPTIMALITY);
+
+        IF_VERBOSE {
+            IF_DEBUG { SET_INT(CPXPARAM_ScreenOutput, CPX_ON); }
+        }
 
         return 0;
     }

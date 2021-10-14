@@ -14,14 +14,15 @@
 #include "SubInstance.hpp"
 #include "cft.hpp"
 
-#define SHORT_T_LIM 10.0
-#define LONG_T_LIM(TOTAL_TIME) (TOTAL_TIME / 2.0)
-
 class TwoPhase {
 public:
-    TwoPhase(SubInstance& subinst_) : subinst(subinst_), subgradient(subinst_), exact_time_limit(LONG_T_LIM(subinst.get_timelimit().seconds_until_end())) { }
-    inline GlobalSolution solve(const real_t global_UB, GlobalSolution& S_star) { return operator()(global_UB, S_star); }
-    GlobalSolution operator()(const real_t global_UB, GlobalSolution& S_star) {
+    TwoPhase(SubInstance& subinst_) : subinst(subinst_), subgradient(subinst_) { }
+
+    inline GlobalSolution solve(const real_t global_UB, GlobalSolution& S_star, Timer& exact_time_limit) {
+        return operator()(global_UB, S_star, exact_time_limit);
+    }
+
+    GlobalSolution operator()(const real_t global_UB, GlobalSolution& S_star, Timer& exact_time_limit) {
 
         LocalMultipliers u_star(subinst.get_nrows(), 0.0);
 
@@ -30,7 +31,7 @@ public:
         real_t subgrad_UB = glb_UB_star - fixed_cost;
 
         // 1. SUBGRADIENT PHASE
-        LocalMultipliers u_k = subgradient.solve(subgrad_UB, SubGradient::u_greedy_init(subinst));
+        LocalMultipliers u_k = subgradient.solve(subgrad_UB, SubGradient::u_greedy_init(subinst), subinst.get_timelimit());
 
         real_t lcl_LB = subgradient.get_best_LB();
         real_t glb_LB = fixed_cost + lcl_LB;
@@ -40,7 +41,7 @@ public:
 
         // 2. HEURISTIC PHASE
         LocalSolution S_curr(subinst.get_localized_solution(S_star));
-        cplex_heur(S_curr, S_star, glb_UB_star);
+        cplex_heur(S_curr, S_star, glb_UB_star, exact_time_limit);
 
         return S_star;
     }
@@ -48,14 +49,13 @@ public:
     inline GlobalMultipliers& get_global_u() { return glo_u; }
 
 private:
-    void cplex_heur(LocalSolution& S_init, GlobalSolution& S_star, real_t& glb_UB_star) {
+    void cplex_heur(LocalSolution& S_init, GlobalSolution& S_star, real_t& glb_UB_star, Timer& exact_time_limit) {
 
         real_t fixed_cost = subinst.get_fixed_cost();
         real_t S_init_cost = S_init.compute_cost(subinst);
         IF_VERBOSE { fmt::print("│ Initial solution value {} (global: {})\n", S_init_cost, S_init_cost + fixed_cost); }
 
         LocalSolution S = exact.build_and_opt(subinst, S_init, exact_time_limit);
-        exact_time_limit = SHORT_T_LIM;
 
         if (S.size() > 0) {
 
@@ -84,8 +84,6 @@ private:
 
     SubGradient subgradient;
     ExactSolver exact;
-
-    double exact_time_limit;
 
     GlobalMultipliers glo_u;
 };

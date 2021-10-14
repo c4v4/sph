@@ -7,12 +7,12 @@
 #include <sstream>
 
 struct InstanceData {
-    idx_t nrows{};
-    std::vector<real_t> costs{};
-    std::vector<real_t> solcosts{};
-    std::vector<idx_t> matbeg{};
-    std::vector<idx_t> matval{};
-    std::vector<idx_t> warmstart;
+    unsigned nrows{};
+    std::vector<double> costs{};
+    std::vector<double> solcosts{};
+    std::vector<unsigned> matbeg{};
+    std::vector<unsigned> matval{};
+    std::vector<unsigned> warmstart;
 };
 
 // trim from start (in place)
@@ -52,8 +52,8 @@ InstanceData parse_scp_instance(const std::string& path) {
     InstanceData inst;
     inst.nrows = std::stoul(tokens[0]);
     const auto ncols = std::stoul(tokens[1]);
-    inst.costs = std::vector<real_t>(ncols);
-    inst.solcosts = std::vector<real_t>(ncols, REAL_MAX);
+    inst.costs = std::vector<double>(ncols);
+    inst.solcosts = std::vector<double>(ncols, 10e10);
 
     auto j = 0UL;
     while (j < inst.costs.size()) {
@@ -110,8 +110,8 @@ InstanceData parse_rail_instance(const std::string& path) {
     InstanceData inst;
     inst.nrows = std::stoul(tokens[0]);
     const auto ncols = std::stoul(tokens[1]);
-    inst.costs = std::vector<real_t>(ncols);
-    inst.solcosts = std::vector<real_t>(ncols, REAL_MAX);
+    inst.costs = std::vector<double>(ncols);
+    inst.solcosts = std::vector<double>(ncols, 10e10);
 
     for (auto j = 0UL; j < ncols; j++) {
 
@@ -145,8 +145,8 @@ InstanceData parse_cvrp_instance(const std::string& path) {
     InstanceData inst;
     inst.nrows = std::stoul(tokens[0]);
     const auto ncols = std::stoul(tokens[1]);
-    inst.costs = std::vector<real_t>(ncols);
-    inst.solcosts = std::vector<real_t>(ncols);
+    inst.costs = std::vector<double>(ncols);
+    inst.solcosts = std::vector<double>(ncols);
 
     for (auto j = 0UL; j < ncols; j++) {
 
@@ -155,7 +155,7 @@ InstanceData parse_cvrp_instance(const std::string& path) {
         inst.costs[j] = std::stof(tokens[0]);
         inst.solcosts[j] = std::stof(tokens[1]);
 
-       inst.matbeg.emplace_back(inst.matval.size());
+        inst.matbeg.emplace_back(inst.matval.size());
 
         for (auto n = 2UL; n < tokens.size(); n++) {
             const auto i = std::stoul(tokens[n]);

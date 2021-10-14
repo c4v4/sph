@@ -6,6 +6,7 @@
 
 #include "LowerBound.hpp"
 #include "SubGradientUtils.hpp"
+#include "cft.hpp"
 
 #define REAL_TOLERANCE 1E-6
 
@@ -45,44 +46,16 @@ public:
         return u_0;
     }
 
-    LocalMultipliers solve(real_t UB, const LocalMultipliers& u_0) {
-        loop<false>(UB, u_0, 10 * subinst.get_rows().size());
-        return u_star;
-    }
-
-    std::vector<LocalMultipliers>& explore(real_t UB, const LocalMultipliers& u_0, idx_t trials) {
-        u_list.clear();
-        loop<true>(UB, u_0, trials);
-        return u_list;
-    }
-
-    real_t get_best_LB() { return LB_star; }
-
-private:
-    SubInstance& subinst;
-
-    real_t LB_star;
-    LocalMultipliers u_star;
-    LocalMultipliers u;
-
-    std::vector<LocalMultipliers> u_list;  // sequence of multipliers found during exploration of u_star
-    ReducedLagrMultLB<1, 1000> norm_reducer;
-    DeltaLowerBound<0, 1> lb_maintainer;
-
-    StepSizeFactor lambda;
-
-    template <bool heuristic_phase>
-    void loop(real_t UB, const LocalMultipliers& u_0, idx_t max_iter) {
-
-        const idx_t nrows = subinst.get_rows().size();
+    LocalMultipliers solve(real_t UB, const LocalMultipliers& u_0, Timer& time_limit) {
+        size_t max_iter = 10 * subinst.get_rows().size();
+        idx_t nrows = subinst.get_rows().size();
 
         // PARAMETERS
-        if constexpr (!heuristic_phase) { lambda = StepSizeFactor(0.1, 20); }  // step size
-        auto T = PricingPeriod(10, std::min<idx_t>(1000UL, nrows / 3));        // pricing frequency
-        auto time_to_exit = ExitCondition(300U);
+        lambda = StepSizeFactor(0.1, 20);                         // step size
+        PricingPeriod T(10, std::min<idx_t>(1000UL, nrows / 3));  // pricing frequency
+        ExitCondition exit_now(300U);
 
         LB_star = REAL_LOWEST;
-
         u = u_0;
         u_star = u_0;
 
@@ -93,15 +66,10 @@ private:
         std::vector<std::pair<idx_t, real_t>> delta_u;
 
         for (idx_t iter = 0; iter < max_iter; ++iter) {
-            if (subinst.get_timelimit().exceeded_tlim()) { break; }
+            if (time_limit.exceeded_tlim()) { break; }
 
             lambda.update(real_LB);
-
-            if constexpr (heuristic_phase) {
-                norm_reducer.compute_sol(subinst, S, covered_rows);
-            } else {
-                norm_reducer.compute_reduced_sol(subinst, S, covered_rows);
-            }
+            norm_reducer.compute_reduced_sol(subinst, S, covered_rows);
 
             // Multipliers update:
             delta_u.clear();
@@ -118,8 +86,7 @@ private:
                 }
             } else {
                 IF_VERBOSE { fmt::print(" WARNING: s2sum == 0\n"); }
-                if constexpr (heuristic_phase) { u_list.emplace_back(u); }
-                return;
+                return u_star;
             }
 
             real_LB = lb_maintainer.update(subinst, delta_u);
@@ -134,9 +101,8 @@ private:
 
             if (real_LB > UB - HAS_INTEGRAL_COSTS) {
                 IF_VERBOSE { fmt::print(" WARNING: real_LB({}) > UB({}) - {}\n", real_LB, UB, HAS_INTEGRAL_COSTS); }
-                if constexpr (heuristic_phase) { u_list.emplace_back(u); }
                 u_star = u;
-                return;
+                return u_star;
             }
 
             if (covered_rows.get_uncovered() == 0) {
@@ -144,30 +110,34 @@ private:
                 if (S_cost < UB) { UB = S_cost; }
             }
 
-            if constexpr (heuristic_phase) {
-                u_list.emplace_back(u);
-            } else {
+            if (exit_now(LB_star)) { return u_star; }
 
-                if (time_to_exit(LB_star)) {
-                    // IF_VERBOSE {
-                    //    fmt::print("[{:^4}] Lower Bound: {:.4} (best {:.4}), lambda {:.4}, S_cost {:.4}\n", iter, real_LB, LB_star, lambda.get(),
-                    //               S.compute_cost(subinst));
-                    //}
+            T.inc();
+            if (T.reached()) {
+                const auto global_LB = subinst.price(u);
+                T.reset(global_LB, real_LB, UB);
+                // fmt::print("Pricing: global {}, local {}\n", global_LB, real_LB);
 
-                    return;
-                }
-
-                T.inc();
-                if (T.reached()) {
-                    const auto global_LB = subinst.price(u);
-                    T.reset(global_LB, real_LB, UB);
-                    //fmt::print("Pricing: global {}, local {}\n", global_LB, real_LB);
-
-                    LB_star = real_LB = lb_maintainer.compute(subinst, u);
-                }
+                LB_star = real_LB = lb_maintainer.compute(subinst, u);
             }
         }
+        return u_star;
     }
+
+
+    real_t get_best_LB() { return LB_star; }
+
+private:
+    SubInstance& subinst;
+
+    real_t LB_star;
+    LocalMultipliers u_star;
+    LocalMultipliers u;
+
+    ReducedLagrMultLB<1, 1000> norm_reducer;
+    DeltaLowerBound<0, 1> lb_maintainer;
+
+    StepSizeFactor lambda;
 };
 
 #endif

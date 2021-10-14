@@ -13,12 +13,16 @@
 #define PI_MAX 0.9
 #define POST_OPT_TRIALS 100
 
+#define SHORT_T_LIM 10.0
+#define LONG_T_LIM(TOTAL_TIME) (std::min(TOTAL_TIME / 2.0, 100.0))
+
 class Refinement {
 public:
     Refinement(Instance& inst_, std::mt19937& rnd_) : inst(inst_), subinst(inst_), two_phase(subinst), rnd(rnd_) { }
 
     // S_init must be a global complete solution
-    std::vector<idx_t> operator()([[maybe_unused]] const std::vector<idx_t>& S_init) {
+    template <unsigned long ROUTES_HARD_CAP>
+    std::vector<idx_t> solve([[maybe_unused]] const std::vector<idx_t>& S_init) {
 
         // 1.
         GlobalSolution S_star;
@@ -37,13 +41,15 @@ public:
         real_t last_improving_pi = pi;
 
         int post_optimization_trials = POST_OPT_TRIALS;
+        Timer& global_time_limit = inst.get_timelimit();
 
         idx_t iter = 1;
         do {
             subinst.reset();  // 2.
 
             {
-                GlobalSolution S = two_phase(S_star.get_cost(), S_star);  // 3. & 4.
+                Timer iteration_timer = Timer(iter == 1 ? LONG_T_LIM(global_time_limit.seconds_until_end()) : SHORT_T_LIM);
+                GlobalSolution S = two_phase(S_star.get_cost(), S_star, iteration_timer);  // 3. & 4.
 
                 assert(!(std::fabs(pi - PI_MIN) > 0.001 && inst.get_fixed_cols().empty()));
                 pi *= ALPHA;  // 6.
@@ -53,20 +59,17 @@ public:
 
                     last_improving_pi = pi;
 
-                    // pi = PI_MIN;            // 6.
                     pi = std::max(pi / (ALPHA * ALPHA), PI_MIN);  // 6.
                 }
-
-                if (iter == 1) { u_star = two_phase.get_global_u(); }
 
                 if (S_star.get_cost() - 1.0 <= BETA * u_star.get_lb() || pi > PI_MAX || inst.get_active_rows_size() <= 0) {
 
                     if (post_optimization_trials <= 0) {
                         IF_VERBOSE {
                             fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
-                            fmt::print("║ Early Exit: β(={}) * LB(={}) > UB(={}) - 1\n", BETA, u_star.get_lb(), S_star.get_cost());
-                            fmt::print("║ Active rows {}, active cols {}, pi {}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
-                            fmt::print("║ LB {}, UB {}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
+                            fmt::print("║ Early Exit: β(={:.1f}) * LB(={:.1f}) > UB(={:.1f}) - 1\n", BETA, u_star.get_lb(), S_star.get_cost());
+                            fmt::print("║ Active rows {}, active cols {}, pi {:.3f}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
+                            fmt::print("║ LB {:.1f}, UB {:.1f}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
                             fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
                         }
                         break;
@@ -78,10 +81,25 @@ public:
                     pi = last_improving_pi;
                     last_improving_pi = std::max(PI_MIN, last_improving_pi / ALPHA);
                 }
-
             }  //(S and u are potentially been moved, better to encapsulate them into a block)
 
-            if (inst.get_timelimit().exceeded_tlim()) {
+            if (iter == 1) {
+                u_star = two_phase.get_global_u();
+                std::vector<idx_t> old_to_new_idx_map = inst.prune_instance<ROUTES_HARD_CAP>(u_star);
+
+                IF_VERBOSE { fmt::print("Instance size: {}x{}\n", inst.get_nrows(), inst.get_ncols()); }
+
+                if (!old_to_new_idx_map.empty()) {
+                    for (idx_t& gj : S_star) {
+                        gj = old_to_new_idx_map[gj];
+                        assert(gj != REMOVED_INDEX);
+                    }
+                }
+            }
+
+            inst.reset_fixing();
+
+            if (global_time_limit.exceeded_tlim()) {
                 IF_VERBOSE {
                     fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
                     fmt::print("║ Timelimit exceeded\n");
@@ -93,8 +111,6 @@ public:
             pi = std::min<real_t>(PI_MAX, pi);
 
             // 7. Refinement Fix
-            inst.reset_fixing();
-
             cols_to_fix = random_fix(S_star, pi);
 
             assert(cols_to_fix.size() <= S_star.size());
@@ -104,8 +120,8 @@ public:
 
             IF_VERBOSE {
                 fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
-                fmt::print("║ Active rows {}, active cols {}, pi {}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
-                fmt::print("║ LB {}, UB {}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
+                fmt::print("║ Active rows {}, active cols {}, pi {:.3f}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
+                fmt::print("║ LB {:.1f}, UB {:.1f}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
                 fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
             }
 
@@ -116,11 +132,9 @@ public:
         return S_star;
     }
 
-    std::vector<idx_t> inline solve([[maybe_unused]] const std::vector<idx_t>& S_init) { return operator()(S_init); }
-
 private:
     [[nodiscard]] std::vector<idx_t> refinement_fix(GlobalSolution S_star, GlobalMultipliers u_star, real_t pi) {
-        Cols& cols = inst.get_cols();
+        UniqueColSet& cols = inst.get_cols();
 
         covered_rows.reset_covered(cols, S_star, inst.get_nrows());
 
@@ -148,7 +162,7 @@ private:
     }
 
     [[nodiscard]] std::vector<idx_t> random_fix(GlobalSolution S_star, real_t pi) {
-        Cols& cols = inst.get_cols();
+        UniqueColSet& cols = inst.get_cols();
 
         std::shuffle(S_star.begin(), S_star.end(), rnd);
 
@@ -166,7 +180,7 @@ private:
     }
 
     [[nodiscard]] std::vector<idx_t> binary_tournament_fix(GlobalSolution S_star, GlobalMultipliers u_star, real_t pi) {
-        Cols& cols = inst.get_cols();
+        UniqueColSet& cols = inst.get_cols();
 
         covered_rows.reset_covered(cols, S_star, inst.get_nrows());
 
@@ -200,9 +214,9 @@ private:
 
         return cols_to_fix;
     }
-    
+
     [[nodiscard]] std::vector<idx_t> random_fix2(GlobalSolution S_star, GlobalMultipliers u_star, real_t pi) {
-        Cols& cols = inst.get_cols();
+        UniqueColSet& cols = inst.get_cols();
         std::uniform_real_distribution<real_t> dist(0.5, 1.5);
 
         covered_rows.reset_covered(cols, S_star, inst.get_nrows());
