@@ -76,7 +76,6 @@ namespace sph {
 
 #ifndef SPH_INCLUDE_COLUMNS_HPP_
 #define SPH_INCLUDE_COLUMNS_HPP_
-#include <fmt/core.h>
 #include <stddef.h>
 
 #include <algorithm>
@@ -84,6 +83,7 @@ namespace sph {
 #include <numeric>
 
 /* #include "cft.hpp" */
+#include "fmt/core.h"
 
 namespace sph {
 
@@ -975,7 +975,7 @@ namespace sph {
     constexpr unsigned SUBINST_HARD_CAP = 15'000U;
 
     /**
-     * @brief Represente a complete instance of a Set Partitioning problem.
+     * @brief Represents a complete instance of a Set Partitioning problem.
      *
      */
     class Instance {
@@ -1388,9 +1388,6 @@ namespace sph {
 #define SPH_INCLUDE_SUBINSTANCE_HPP_
 
 
-#include <fmt/core.h>
-#include <fmt/ranges.h>
-
 #include <algorithm>
 #include <cassert>
 #include <numeric>
@@ -1401,6 +1398,8 @@ namespace sph {
 /* #include "MStar.hpp" */
 /* #include "Stopwatch.hpp" */
 /* #include "cft.hpp" */
+#include "fmt/core.h"
+#include "fmt/ranges.h"
 
 namespace sph {
 
@@ -1589,7 +1588,8 @@ namespace sph {
         }
 
         inline void update_sol_cost(const std::vector<idx_t> &local_sol) {
-            real_t sol_cost = std::accumulate(local_sol.begin(), local_sol.end(), 0.0, [&](real_t sum, idx_t lj) { return sum + cols[lj].get_cost(); });
+            real_t sol_cost = std::accumulate(local_sol.begin(), local_sol.end(), 0.0,
+                                              [&](real_t sum, idx_t lj) { return sum + cols[lj].get_cost(); });
             sol_cost += get_fixed_cost();
             update_sol_costs(local_sol, sol_cost);
         }
@@ -1918,13 +1918,23 @@ namespace sph {
 
 namespace sph {
 
-#define RESIZE_UP(vec, sz) ;    if (vec.size() < sz) { vec.resize(sz); }
+#define RESIZE_UP(vec, sz) \
+    if (vec.size() < sz) { vec.resize(sz); }
 
-#define ASSIGN_UP(vec, sz, val) ;    if (vec.size() < sz) { vec.assign(sz, val); }
+#define ASSIGN_UP(vec, sz, val) \
+    if (vec.size() < sz) { vec.assign(sz, val); }
 
-#define SET_INT(P, VAL)                                                           ;    if (int res = 0; (res = CPXsetintparam(env, P, VAL))) {                       ;        fmt::print(stderr, "Error while setting " #P " parameter at {} \n", VAL); ;        return res;                                                               ;    }
+#define SET_INT(P, VAL)                                                           \
+    if (int res = 0; (res = CPXsetintparam(env, P, VAL))) {                       \
+        fmt::print(stderr, "Error while setting " #P " parameter at {} \n", VAL); \
+        return res;                                                               \
+    }
 
-#define SET_DBL(P, VAL)                                                           ;    if (int res = 0; (res = CPXsetdblparam(env, P, VAL))) {                       ;        fmt::print(stderr, "Error while setting " #P " parameter at {} \n", VAL); ;        return res;                                                               ;    }
+#define SET_DBL(P, VAL)                                                           \
+    if (int res = 0; (res = CPXsetdblparam(env, P, VAL))) {                       \
+        fmt::print(stderr, "Error while setting " #P " parameter at {} \n", VAL); \
+        return res;                                                               \
+    }
 
     class ExactSolver {
 
@@ -1953,7 +1963,9 @@ namespace sph {
             }
 
             SPH_DEBUG {
-                if ((res = CPXwriteprob(env, lp, "model.lp", nullptr))) { fmt::print(stderr, "Error while writing problem file(errno: {})\n", res); }
+                if ((res = CPXwriteprob(env, lp, "model.lp", nullptr))) {
+                    fmt::print(stderr, "Error while writing problem file(errno: {})\n", res);
+                }
             }
 
             if ((res = CPXmipopt(env, lp))) {
@@ -2044,7 +2056,8 @@ namespace sph {
             ASSIGN_UP(ones, static_cast<size_t>(nzcount), 1.0);
             ASSIGN_UP(sense, static_cast<size_t>(nrows), 'E');
 
-            return CPXaddrows(env, lp, 0, nrows, nzcount, ones.data(), sense.data(), rmatbeg.data(), rmatind.data(), ones.data(), nullptr, nullptr);
+            return CPXaddrows(env, lp, 0, nrows, nzcount, ones.data(), sense.data(), rmatbeg.data(), rmatind.data(), ones.data(), nullptr,
+                              nullptr);
         }
 
         int set_warmstart(LocalSolution& warmstart) {

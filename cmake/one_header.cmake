@@ -55,19 +55,22 @@ function(one_header_only)
     endforeach()
 
 
-    function(deleteinplace IN_FILE pattern)
+    function(deleteinplace IN_FILE)
         message("Reading file ${IN_FILE}")
-        file (STRINGS ${IN_FILE} LINES ENCODING "UTF-8")
-        file(WRITE ${IN_FILE} "")
+        file (STRINGS ${IN_FILE} LINES_RAW NEWLINE_CONSUME ENCODING "UTF-8")
+        
+        # CMAKE list are separated using ";". So this MF put ; everywhere and escape all the ";" 
+        # originally in the text.
+        # But here's the catch: if you terminate you line with \, it produces \; that is transformed into ; 
+        # when the list of string is red line by line, thus removing a new-line and spwaning a ";" 
+        # out of oblivion. 
+        string(REGEX REPLACE "\\\\;" ";" LINES "${LINES_RAW}") 
+        string(REGEX REPLACE "(\#include \"[A-Za-z0-9_\\.]*\")" "/* \\1 */" STRIPPED "${LINES}")
+        file(WRITE ${IN_FILE} "${STRIPPED}")
 
-        foreach(LINE IN LISTS LINES)
-            string(REGEX REPLACE ${pattern} "/* ${LINE} */" STRIPPED "${LINE}")
-            string(REGEX REPLACE ".*\#include \"fmt/.*" "${LINE}" RESTORED "${STRIPPED}")
-            file(APPEND ${IN_FILE} "${RESTORED}\n")
-        endforeach()
     endfunction()
 
-    deleteinplace(one_header_only/SPH.hpp "\#include \".*")
+    deleteinplace(one_header_only/SPH.hpp)
 endfunction()
 
 one_header_only()

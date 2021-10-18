@@ -1,6 +1,5 @@
 #ifndef SPH_INCLUDE_COLUMNS_HPP_
 #define SPH_INCLUDE_COLUMNS_HPP_
-#include <fmt/core.h>
 #include <stddef.h>
 
 #include <algorithm>
@@ -8,6 +7,7 @@
 #include <numeric>
 
 #include "cft.hpp"
+#include "fmt/core.h"
 
 namespace sph {
 

@@ -18,7 +18,7 @@ namespace sph {
     constexpr unsigned SUBINST_HARD_CAP = 15'000U;
 
     /**
-     * @brief Represente a complete instance of a Set Partitioning problem.
+     * @brief Represents a complete instance of a Set Partitioning problem.
      *
      */
     class Instance {

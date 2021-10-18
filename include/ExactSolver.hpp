@@ -56,7 +56,9 @@ namespace sph {
             }
 
             SPH_DEBUG {
-                if ((res = CPXwriteprob(env, lp, "model.lp", nullptr))) { fmt::print(stderr, "Error while writing problem file(errno: {})\n", res); }
+                if ((res = CPXwriteprob(env, lp, "model.lp", nullptr))) {
+                    fmt::print(stderr, "Error while writing problem file(errno: {})\n", res);
+                }
             }
 
             if ((res = CPXmipopt(env, lp))) {
@@ -147,7 +149,8 @@ namespace sph {
             ASSIGN_UP(ones, static_cast<size_t>(nzcount), 1.0);
             ASSIGN_UP(sense, static_cast<size_t>(nrows), 'E');
 
-            return CPXaddrows(env, lp, 0, nrows, nzcount, ones.data(), sense.data(), rmatbeg.data(), rmatind.data(), ones.data(), nullptr, nullptr);
+            return CPXaddrows(env, lp, 0, nrows, nzcount, ones.data(), sense.data(), rmatbeg.data(), rmatind.data(), ones.data(), nullptr,
+                              nullptr);
         }
 
         int set_warmstart(LocalSolution& warmstart) {

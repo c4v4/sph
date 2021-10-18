@@ -2,9 +2,6 @@
 #define SPH_INCLUDE_SUBINSTANCE_HPP_
 
 
-#include <fmt/core.h>
-#include <fmt/ranges.h>
-
 #include <algorithm>
 #include <cassert>
 #include <numeric>
@@ -15,6 +12,8 @@
 #include "MStar.hpp"
 #include "Stopwatch.hpp"
 #include "cft.hpp"
+#include "fmt/core.h"
+#include "fmt/ranges.h"
 
 namespace sph {
 
@@ -203,7 +202,8 @@ namespace sph {
         }
 
         inline void update_sol_cost(const std::vector<idx_t> &local_sol) {
-            real_t sol_cost = std::accumulate(local_sol.begin(), local_sol.end(), 0.0, [&](real_t sum, idx_t lj) { return sum + cols[lj].get_cost(); });
+            real_t sol_cost = std::accumulate(local_sol.begin(), local_sol.end(), 0.0,
+                                              [&](real_t sum, idx_t lj) { return sum + cols[lj].get_cost(); });
             sol_cost += get_fixed_cost();
             update_sol_costs(local_sol, sol_cost);
         }
