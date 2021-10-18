@@ -4,33 +4,42 @@
 #include <cstdint>
 #include <limits>
 
-/* Types and constants */
-typedef uint32_t idx_t;
-typedef double real_t;
-
-#define REAL_MAX (std::numeric_limits<real_t>::max())
-#define REAL_LOWEST (std::numeric_limits<real_t>::lowest())
-#define REMOVED_INDEX (std::numeric_limits<idx_t>::max())
-#define MAX_INDEX (std::numeric_limits<idx_t>::max())
-#define HAS_INTEGRAL_COSTS 1.0  // 1.0 if yes , 0.0 if no
-
-#ifndef INST_HARD_CAP
-#define INST_HARD_CAP 200'000U
-#endif
-
-/* UTILS */
-#define NO_INLINE  //__attribute__((noinline))
-
+/**
+ * VERBOSE: If defined, switches on few prints.
+ * VERBOSE_LEVEL [0-3]: Define how many prints: 0 few (default); 1 some; 2 a lot; 3 all
+ */
 #ifdef VERBOSE
-#define IF_VERBOSE
+    #ifndef VERBOSE_LEVEL
+        #define VERBOSE_LEVEL 0
+    #endif   
+
+    #define SPH_VERBOSE(A) if constexpr (VERBOSE_LEVEL > A)
 #else
-#define IF_VERBOSE if constexpr (false)
+    #define SPH_VERBOSE(A) if constexpr (false)
 #endif
 
 #ifdef NDEBUG
-#define IF_DEBUG if constexpr (false)
+#define SPH_DEBUG if constexpr (false)
 #else
-#define IF_DEBUG
+    #define SPH_DEBUG
 #endif
+
+namespace sph {
+
+    /* Types and constants */
+    typedef uint32_t idx_t;
+    typedef double real_t;
+
+    constexpr real_t REAL_MAX = std::numeric_limits<sph::real_t>::max();
+    constexpr real_t REAL_LOWEST = std::numeric_limits<sph::real_t>::lowest();
+    constexpr idx_t NOT_AN_INDEX = std::numeric_limits<sph::idx_t>::max();
+    constexpr idx_t MAX_INDEX = std::numeric_limits<sph::idx_t>::max();
+    constexpr real_t HAS_INTEGRAL_COSTS = 1.0;  // 1.0 if yes , 0.0 if no
+
+#ifndef SPH_INST_HARD_CAP
+    constexpr unsigned SPH_INST_HARD_CAP = 200'000U;
+#endif
+
+}  // namespace sph
 
 #endif  // SPH_INCLUDE_CFT_HPP_

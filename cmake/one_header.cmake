@@ -22,13 +22,33 @@ function(one_header_only)
 
     function(cat IN_FILE OUT_FILE)
         file(READ ${IN_FILE} CONTENTS)
-        file(APPEND one_header_only/SPH.hpp "\n\n/* ################################################################# */\n")
-        file(APPEND one_header_only/SPH.hpp "/* #### Original Header: ${SPHHEADER} */\n")
-        file(APPEND one_header_only/SPH.hpp "/* ################################################################# */\n\n")
+        string(LENGTH "${SPHHEADER}" NAME_LENGTH)
+        MATH(EXPR COUNT "37 - ${NAME_LENGTH}")
+        string(REPEAT " " ${COUNT} FILLER)
+        file(APPEND one_header_only/SPH.hpp "\n\n/* ######################################################################### */\n")
+        file(APPEND one_header_only/SPH.hpp     "/* ######## Original Header: ${SPHHEADER} ${FILLER} ######## */\n")
+        file(APPEND one_header_only/SPH.hpp     "/* ######################################################################### */\n\n")
         file(APPEND ${OUT_FILE} "${CONTENTS}")
     endfunction()
 
-    file(WRITE one_header_only/SPH.hpp "/* Automatically generated one-header-only library */\n")
+    file(WRITE one_header_only/SPH.hpp  "/* Automatically generated one-header-only library */\n\n")
+    file(APPEND one_header_only/SPH.hpp "
+/* 
+ * Copyright (C) 2021 Francesco Cavaliere - All Rights Reserved
+ * You may use, distribute and modify this code under the
+ * terms of the GPL-3 license.
+ *
+ * You should have received a copy of the GPL-3 license with
+ * this file. If not, please write to: f.cavaliere@unibo.it, 
+ * or try visit: https://github.com/c4v4/sph 
+ */\n")
+    file(APPEND one_header_only/SPH.hpp "
+/* 
+ * A subset of the of the excelent fmtlib is included in this 
+ * library in header-only mode.
+ * Include you local version before this file if you want to 
+ * use it (can decrease compile-time).
+ */\n")
 
     foreach(SPHHEADER ${SHPHEADERS})
     cat(${SPHHEADER} one_header_only/SPH.hpp)
@@ -36,16 +56,19 @@ function(one_header_only)
 
 
     function(deleteinplace IN_FILE pattern)
-    file (STRINGS ${IN_FILE} LINES ENCODING "UTF-8")
-    file(WRITE ${IN_FILE} "")
+        message("Reading file ${IN_FILE}")
+        file (STRINGS ${IN_FILE} LINES ENCODING "UTF-8")
+        file(WRITE ${IN_FILE} "")
 
-    foreach(LINE IN LISTS LINES)
-        string(REGEX REPLACE ${pattern} "/* ${LINE} */" STRIPPED "${LINE}")
-        file(APPEND ${IN_FILE} "${STRIPPED}\n")
-    endforeach()
+        foreach(LINE IN LISTS LINES)
+            string(REGEX REPLACE ${pattern} "/* ${LINE} */" STRIPPED "${LINE}")
+            string(REGEX REPLACE ".*\#include \"fmt/.*" "${LINE}" RESTORED "${STRIPPED}")
+            file(APPEND ${IN_FILE} "${RESTORED}\n")
+        endforeach()
     endfunction()
 
     deleteinplace(one_header_only/SPH.hpp "\#include \".*")
 endfunction()
 
 one_header_only()
+file(COPY include/fmt DESTINATION one_header_only/)

@@ -14,6 +14,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OPT_FLAGS}")
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(SOURCE src/main.cpp)
 set(LIBRARIES fmt pthread dl m)
+#set(LIBRARIES pthread dl m)
 
 # Find CPLEX
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")

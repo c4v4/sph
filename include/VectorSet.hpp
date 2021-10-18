@@ -48,7 +48,7 @@ namespace cav {
 
         VectorSet(const VectorSet& other) : vec(other.vec), set(other.set) { vec_data = vec.data(); }
 
-        VectorSet(VectorSet&& other) : vec(std::move(other.vec)), set(std::move(other.set)) { vec_data = vec.data(); }
+        VectorSet(VectorSet&& other) noexcept : vec(std::move(other.vec)), set(std::move(other.set)) { vec_data = vec.data(); }
 
         VectorSet& operator=(const VectorSet& other) {
             vec = other.vec;
@@ -57,7 +57,7 @@ namespace cav {
             return *this;
         }
 
-        VectorSet& operator=(VectorSet&& other) {
+        VectorSet& operator=(VectorSet&& other) noexcept {
             vec = std::move(other.vec);
             set = std::move(other.set);
             vec_data = vec.data();
