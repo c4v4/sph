@@ -13,7 +13,7 @@
         #define VERBOSE_LEVEL 0
     #endif   
 
-    #define SPH_VERBOSE(A) if constexpr (VERBOSE_LEVEL > A)
+    #define SPH_VERBOSE(A) if constexpr (VERBOSE_LEVEL >= A)
 #else
     #define SPH_VERBOSE(A) if constexpr (false)
 #endif
@@ -36,8 +36,8 @@ namespace sph {
     constexpr idx_t MAX_INDEX = std::numeric_limits<sph::idx_t>::max();
     constexpr real_t HAS_INTEGRAL_COSTS = 1.0;  // 1.0 if yes , 0.0 if no
 
-#ifndef SPH_INST_HARD_CAP
-    constexpr unsigned SPH_INST_HARD_CAP = 200'000U;
+#ifndef INST_HARD_CAP
+    constexpr unsigned INST_HARD_CAP = 200'000U;
 #endif
 
 }  // namespace sph

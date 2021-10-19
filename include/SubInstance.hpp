@@ -247,7 +247,7 @@ namespace sph {
             inst.fill_with_best_columns(local_to_global_col_idxs);
             replace_columns(local_to_global_col_idxs);
 
-            SPH_VERBOSE(2) { fmt::print("Sub-instance size = {}x{}.\n", rows.size(), cols.size()); }
+            SPH_VERBOSE(2) { fmt::print("   Sub-instance size = {}x{}.\n", rows.size(), cols.size()); }
 
             assert(!is_corrupted());
         }

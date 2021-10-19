@@ -88,7 +88,7 @@ namespace sph {
                         }
                     }
                 } else {
-                    SPH_VERBOSE(3) { fmt::print(" WARNING: s2sum == 0\n"); }
+                    SPH_VERBOSE(3) { fmt::print("    WARNING: s2sum == 0\n"); }
                     return u_star;
                 }
 
@@ -103,7 +103,7 @@ namespace sph {
                 // S.compute_cost(subinst));
 
                 if (real_LB > UB - HAS_INTEGRAL_COSTS) {
-                    SPH_VERBOSE(3) { fmt::print(" WARNING: real_LB({}) > UB({}) - {}\n", real_LB, UB, HAS_INTEGRAL_COSTS); }
+                    SPH_VERBOSE(3) { fmt::print("    WARNING: real_LB({}) > UB({}) - {}\n", real_LB, UB, HAS_INTEGRAL_COSTS); }
                     u_star = u;
                     return u_star;
                 }

@@ -55,7 +55,7 @@ namespace sph {
 
             real_t fixed_cost = subinst.get_fixed_cost();
             real_t S_init_cost = S_init.compute_cost(subinst);
-            SPH_VERBOSE(3) { fmt::print("│ Initial solution value {} (global: {})\n", S_init_cost, S_init_cost + fixed_cost); }
+            SPH_VERBOSE(3) { fmt::print("    │ Initial solution value {} (global: {})\n", S_init_cost, S_init_cost + fixed_cost); }
 
             LocalSolution S = exact.build_and_opt(subinst, S_init, exact_time_limit);
 
@@ -70,14 +70,14 @@ namespace sph {
 
                     glb_UB_star = gS_cost;
                     S_star = GlobalSolution(subinst, S);
-                    SPH_VERBOSE(3) { fmt::print("│ ══> CPLEX improved global UB: {} (fixed {} + local-cost {})\n", S_star.get_cost(), fixed_cost, S_cost); }
+                    SPH_VERBOSE(3) { fmt::print("    │ ══> CPLEX improved global UB: {} (fixed {} + local-cost {})\n", S_star.get_cost(), fixed_cost, S_cost); }
 
                 } else {
-                    SPH_VERBOSE(3) { fmt::print("│ ──> CPLEX Improved local UB: {} (global value {}, best is {})\n", S_cost, S_cost + fixed_cost, glb_UB_star); }
+                    SPH_VERBOSE(3) { fmt::print("    │ ──> CPLEX Improved local UB: {} (global value {}, best is {})\n", S_cost, S_cost + fixed_cost, glb_UB_star); }
                 }
             }
 
-            SPH_VERBOSE(3) { fmt::print("└───────────────────────────────────────────────────────────────────────────────────\n\n"); }
+            SPH_VERBOSE(3) { fmt::print("    └───────────────────────────────────────────────────────────────────────\n\n"); }
         }
 
 

@@ -38,7 +38,7 @@
         #define VERBOSE_LEVEL 0
     #endif   
 
-    #define SPH_VERBOSE(A) if constexpr (VERBOSE_LEVEL > A)
+    #define SPH_VERBOSE(A) if constexpr (VERBOSE_LEVEL >= A)
 #else
     #define SPH_VERBOSE(A) if constexpr (false)
 #endif
@@ -61,8 +61,8 @@ namespace sph {
     constexpr idx_t MAX_INDEX = std::numeric_limits<sph::idx_t>::max();
     constexpr real_t HAS_INTEGRAL_COSTS = 1.0;  // 1.0 if yes , 0.0 if no
 
-#ifndef SPH_INST_HARD_CAP
-    constexpr unsigned SPH_INST_HARD_CAP = 200'000U;
+#ifndef INST_HARD_CAP
+    constexpr unsigned INST_HARD_CAP = 200'000U;
 #endif
 
 }  // namespace sph
@@ -898,9 +898,7 @@ namespace sph {
     class UniqueColSet {
     private:
         struct Hash {
-            size_t operator()(const UniqueCol &column) const {
-                return column.size() ^ column.get_comb_hash1() ^ column.get_comb_hash2();
-            }
+            size_t operator()(const UniqueCol &column) const { return column.size() ^ column.get_comb_hash1() ^ column.get_comb_hash2(); }
         };
 
     public:
@@ -921,7 +919,7 @@ namespace sph {
                    (candidate_elem.size() == set_elem->size() && candidate_elem.get_comb_hash1() == set_elem->get_comb_hash1() &&
                     candidate_elem.get_comb_hash2() == set_elem->get_comb_hash2()));
 
-            if (!inserted_new) {  // ==> same combination and size
+            if (!inserted_new) {                                               // ==> same combination and size
                 if (candidate_elem.get_solcost() < set_elem->get_solcost() ||  // Keep the one belonging to the best sol ...
                     candidate_elem < *set_elem) {                              // ... or the dominant one
                     *set_elem = std::move(candidate_elem);
@@ -975,6 +973,38 @@ namespace sph {
     constexpr unsigned SUBINST_HARD_CAP = 15'000U;
 
     /**
+     * @brief
+     * Tell "Instance::fix_columns" what to do when a column contains a
+     * row covered by another fixed column.
+     * Set Partitioning: keep only columns that cover uncovered rows.
+     *
+     */
+    struct SetPar_ActiveColTest {
+        bool operator()(const UniqueCol &col, std::vector<bool> active_rows) const {
+            for (idx_t i : col) {
+                if (!active_rows[i]) { return false; }  // discard
+            }
+            return true;  // keep
+        }
+    };
+
+    /**
+     * @brief
+     * Tell "Instance::fix_columns" what to do when a column contains a
+     * row covered by another fixed column.
+     * Set Covering: keep all the columns that contain an uncovered row.
+     *
+     */
+    struct SetCov_ActiveColTest {
+        bool operator()(const UniqueCol &col, std::vector<bool> active_rows) const {
+            for (idx_t i : col) {
+                if (active_rows[i]) { return true; }  // keep
+            }
+            return false;  // discard
+        }
+    };
+
+    /**
      * @brief Represents a complete instance of a Set Partitioning problem.
      *
      */
@@ -1001,13 +1031,27 @@ namespace sph {
             return active_rows[gi];
         }
 
+        template <typename KeepColStrategy>
         void inline fix_columns(const std::vector<idx_t> &idxs) {
             for (idx_t j : idxs) {
                 for (idx_t i : cols[j]) { active_rows[i] = false; }
             }
 
-            _fix_columns(idxs);
+            _fix_columns<KeepColStrategy>(idxs);
         }
+
+        template <typename KeepColStrategy>
+        void fix_columns(const std::vector<idx_t> &idxs, const MStar &M_star) {
+            assert(fixed_cols.empty());
+            assert(active_rows.size() == nrows);
+            assert(M_star.size() == nrows);
+
+            for (idx_t i = 0; i < nrows; ++i) { active_rows[i] = !M_star[i]; }
+            nactive_rows = M_star.get_uncovered();
+
+            _fix_columns<KeepColStrategy>(idxs);
+        }
+
 
         void reset_fixing() {
             assert(std::is_sorted(active_cols.begin(), active_cols.end()));
@@ -1021,17 +1065,6 @@ namespace sph {
 
             fixed_cols.clear();
             fixed_cost = 0.0;
-        }
-
-        void fix_columns(const std::vector<idx_t> &idxs, const MStar &M_star) {
-            assert(fixed_cols.empty());
-            assert(active_rows.size() == nrows);
-            assert(M_star.size() == nrows);
-
-            for (idx_t i = 0; i < nrows; ++i) { active_rows[i] = !M_star[i]; }
-            nactive_rows = M_star.get_uncovered();
-
-            _fix_columns(idxs);
         }
 
         template <typename... _Args>
@@ -1070,7 +1103,8 @@ namespace sph {
         }
 
         template <typename CostVec, typename SolCostVec, typename MatBegVec, typename MatValVec>
-        std::vector<idx_t> add_columns(const CostVec &costs, const SolCostVec &sol_costs, const MatBegVec &matbeg, const MatValVec &matval) {
+        std::vector<idx_t> add_columns(const CostVec &costs, const SolCostVec &sol_costs, const MatBegVec &matbeg,
+                                       const MatValVec &matval) {
             assert(costs.size() == sol_costs.size() && costs.size() <= matbeg.size());
 
             idx_t ncols = costs.size();
@@ -1080,14 +1114,14 @@ namespace sph {
 
             for (idx_t j = 0; j < ncols - 1; ++j) {
                 idx_t inserted_idx = add_column(&matval[matbeg[j]], &matval[matbeg[j + 1]], costs[j], sol_costs[j]);
-                if (inserted_idx != NOT_AN_INDEX) { inserted_cols_idxs.emplace_back(inserted_idx); }
+                inserted_cols_idxs.emplace_back(inserted_idx);
             }
 
             // Matbeg might prbably contains only the starts
             idx_t inserted_idx = add_column(&matval[matbeg[ncols - 1]], &matval[matval.size() - 1], costs[ncols - 1], sol_costs[ncols - 1]);
-            if (inserted_idx != NOT_AN_INDEX) { inserted_cols_idxs.emplace_back(inserted_idx); }
+            inserted_cols_idxs.emplace_back(inserted_idx);
 
-            assert(cols.size() == costs.size());
+            assert(cols.size() <= costs.size());
             return inserted_cols_idxs;
         }
 
@@ -1342,16 +1376,11 @@ namespace sph {
             }
         }
 
+        template <typename KeepColStrategy>
         void _fix_columns(const std::vector<idx_t> &idxs) {
             idx_t iok = 0;
             for (idx_t j = 0; j < cols.size(); ++j) {
-                auto &col = cols[j];
-                for (idx_t i : col) {
-                    if (active_rows[i]) {
-                        active_cols[iok++] = j;
-                        break;
-                    }
-                }
+                if (KeepColStrategy()(cols[j], active_rows)) { active_cols[iok++] = j; }
             }
 
             active_cols.resize(iok);
@@ -1633,7 +1662,7 @@ namespace sph {
             inst.fill_with_best_columns(local_to_global_col_idxs);
             replace_columns(local_to_global_col_idxs);
 
-            SPH_VERBOSE(2) { fmt::print("Sub-instance size = {}x{}.\n", rows.size(), cols.size()); }
+            SPH_VERBOSE(2) { fmt::print("   Sub-instance size = {}x{}.\n", rows.size(), cols.size()); }
 
             assert(!is_corrupted());
         }
@@ -1803,7 +1832,6 @@ namespace sph {
      * However, in the end they are simply a vector of indexes plus some utility functions attached to them.
      */
     class LocalSolution;
-    class LocalSolution;
     class GlobalSolution;
 
     class BaseSolution : public std::vector<idx_t> {
@@ -1822,8 +1850,6 @@ namespace sph {
         }
 
         inline void remove(std::vector<idx_t>& col_idxs) {
-            //  assuming n >> n', n: sol size, n': cols to remove
-
             std::sort(col_idxs.begin(), col_idxs.end());  // O(n' log(n'))
             idx_t removed_counter = col_idxs.size();
 
@@ -2087,11 +2113,11 @@ namespace sph {
             SET_INT(CPXPARAM_MIP_Display, 2);
             SET_INT(CPXPARAM_Threads, 1);
             SET_INT(CPXPARAM_Emphasis_MIP, CPX_MIPEMPHASIS_OPTIMALITY);
-            tlim = std::min(tlim, 0.1);
+            tlim = std::max(tlim, 0.1);
             SET_DBL(CPXPARAM_MIP_PolishAfter_Time, tlim * 0.5);
             SET_DBL(CPXPARAM_TimeLimit, tlim);
 
-            SPH_VERBOSE(3) { SET_INT(CPXPARAM_ScreenOutput, CPX_ON); }
+            SPH_VERBOSE(4) { SET_INT(CPXPARAM_ScreenOutput, CPX_ON); }
 
             return 0;
         }
@@ -2132,8 +2158,7 @@ namespace sph {
 
     class LocalMultipliers : public std::vector<real_t> {
     public:
-        template <typename... Args>
-        explicit LocalMultipliers(Args&&... _args) : std::vector<real_t>(std::forward<Args>(_args)...) { }
+        using std::vector<real_t>::vector;
 
         [[nodiscard]] inline real_t compute_lb(SubInstance& subinst) const {
             auto& cols = subinst.get_cols();
@@ -2159,7 +2184,8 @@ namespace sph {
         GlobalMultipliers& operator=(const GlobalMultipliers& other) = default;
         GlobalMultipliers& operator=(GlobalMultipliers&& other) = default;
 
-        GlobalMultipliers(SubInstance& subinst, LocalMultipliers mult) : std::vector<real_t>(subinst.get_instance().get_nrows(), 0.0), lb(REAL_LOWEST) {
+        GlobalMultipliers(SubInstance& subinst, LocalMultipliers mult)
+            : std::vector<real_t>(subinst.get_instance().get_nrows(), 0.0), lb(REAL_LOWEST) {
             for (idx_t i = 0; i < mult.size(); ++i) { (*this)[subinst.get_global_row_idx(i)] = mult[i]; }
             update_lb(subinst.get_instance());
         }
@@ -2645,7 +2671,7 @@ namespace sph {
                         }
                     }
                 } else {
-                    SPH_VERBOSE(3) { fmt::print(" WARNING: s2sum == 0\n"); }
+                    SPH_VERBOSE(3) { fmt::print("    WARNING: s2sum == 0\n"); }
                     return u_star;
                 }
 
@@ -2660,7 +2686,7 @@ namespace sph {
                 // S.compute_cost(subinst));
 
                 if (real_LB > UB - HAS_INTEGRAL_COSTS) {
-                    SPH_VERBOSE(3) { fmt::print(" WARNING: real_LB({}) > UB({}) - {}\n", real_LB, UB, HAS_INTEGRAL_COSTS); }
+                    SPH_VERBOSE(3) { fmt::print("    WARNING: real_LB({}) > UB({}) - {}\n", real_LB, UB, HAS_INTEGRAL_COSTS); }
                     u_star = u;
                     return u_star;
                 }
@@ -2766,7 +2792,7 @@ namespace sph {
 
             real_t fixed_cost = subinst.get_fixed_cost();
             real_t S_init_cost = S_init.compute_cost(subinst);
-            SPH_VERBOSE(3) { fmt::print("│ Initial solution value {} (global: {})\n", S_init_cost, S_init_cost + fixed_cost); }
+            SPH_VERBOSE(3) { fmt::print("    │ Initial solution value {} (global: {})\n", S_init_cost, S_init_cost + fixed_cost); }
 
             LocalSolution S = exact.build_and_opt(subinst, S_init, exact_time_limit);
 
@@ -2781,14 +2807,14 @@ namespace sph {
 
                     glb_UB_star = gS_cost;
                     S_star = GlobalSolution(subinst, S);
-                    SPH_VERBOSE(3) { fmt::print("│ ══> CPLEX improved global UB: {} (fixed {} + local-cost {})\n", S_star.get_cost(), fixed_cost, S_cost); }
+                    SPH_VERBOSE(3) { fmt::print("    │ ══> CPLEX improved global UB: {} (fixed {} + local-cost {})\n", S_star.get_cost(), fixed_cost, S_cost); }
 
                 } else {
-                    SPH_VERBOSE(3) { fmt::print("│ ──> CPLEX Improved local UB: {} (global value {}, best is {})\n", S_cost, S_cost + fixed_cost, glb_UB_star); }
+                    SPH_VERBOSE(3) { fmt::print("    │ ──> CPLEX Improved local UB: {} (global value {}, best is {})\n", S_cost, S_cost + fixed_cost, glb_UB_star); }
                 }
             }
 
-            SPH_VERBOSE(3) { fmt::print("└───────────────────────────────────────────────────────────────────────────────────\n\n"); }
+            SPH_VERBOSE(3) { fmt::print("    └───────────────────────────────────────────────────────────────────────\n\n"); }
         }
 
 
@@ -2823,7 +2849,7 @@ namespace sph {
     constexpr double PI_MIN = 0.3;
 
     constexpr double PI_MAX = 0.9;
-    constexpr unsigned POST_OPT_TRIALS = 100;
+    constexpr unsigned TRIALS = 1000;
 
     constexpr double SHORT_T_LIM = 10.0;
 
@@ -2834,8 +2860,18 @@ namespace sph {
         Refinement(Instance& inst_, std::mt19937& rnd_) : inst(inst_), subinst(inst_), two_phase(subinst), rnd(rnd_) { }
 
         // S_init must be a global complete solution
-        template <unsigned long ROUTES_HARD_CAP>
+        template <unsigned long ROUTES_HARD_CAP, typename KeepColStrategy = SetPar_ActiveColTest>
         GlobalSolution solve([[maybe_unused]] const std::vector<idx_t>& S_init) {
+
+            SPH_VERBOSE(1) {
+                if constexpr (std::is_same_v<KeepColStrategy, SetPar_ActiveColTest>) {
+                    fmt::print("  Using Set Partitioning fixing strategy (overlaps are forbidden).\n");
+                } else if (std::is_same_v<KeepColStrategy, SetCov_ActiveColTest>) {
+                    fmt::print("  Using Set Covering fixing strategy (overlaps are alowed).\n");
+                } else {
+                    fmt::print(stderr, "  Warning: Using unkown fixing strategy.\n");
+                }
+            }
 
             inst.reset_fixing();
 
@@ -2846,11 +2882,11 @@ namespace sph {
                 for (auto j : S_init) { S_star.push_back(j); }
                 S_star.set_cost(cost);
                 SPH_VERBOSE(1) {
-                    fmt::print("Found warm start of cost {}.\n", cost);
+                    fmt::print("  Found warm start of cost {}.\n", cost);
                     SPH_VERBOSE(2) {
                         for (idx_t gj : S_star) {
                             Column col = inst.get_col(gj);
-                            fmt::print("idx: {}, cost: {}, sol cost: {}\n", gj, col.get_cost(), col.get_solcost());
+                            fmt::print("   idx: {}, cost: {}, sol cost: {}\n", gj, col.get_cost(), col.get_solcost());
                         }
                     }
                 }
@@ -2861,7 +2897,7 @@ namespace sph {
             real_t pi = PI_MIN;
             real_t last_improving_pi = pi;
 
-            int post_optimization_trials = POST_OPT_TRIALS;
+            unsigned trial = 0;
             Timer& global_time_limit = inst.get_timelimit();
 
             idx_t iter = 1;
@@ -2885,19 +2921,20 @@ namespace sph {
 
                     if (S_star.get_cost() - 1.0 <= BETA * u_star.get_lb() || pi > PI_MAX || inst.get_active_rows_size() <= 0) {
 
-                        if (post_optimization_trials <= 0) {
+                        if (trial++ > TRIALS) {
                             SPH_VERBOSE(2) {
-                                fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
-                                fmt::print("║ Early Exit: β(={:.1f}) * LB(={:.1f}) > UB(={:.1f}) - 1\n", BETA, u_star.get_lb(), S_star.get_cost());
-                                fmt::print("║ Active rows {}, active cols {}, pi {:.3f}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
-                                fmt::print("║ LB {:.1f}, UB {:.1f}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
-                                fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
+                                fmt::print("   ╔═ REFINEMENT: iter {:3} ══════════════════════════════════════════════════\n", iter);
+                                fmt::print("   ║ Early Exit: β(={:.1f}) * LB(={:.1f}) > UB(={:.1f}) - 1\n", BETA, u_star.get_lb(),
+                                           S_star.get_cost());
+                                fmt::print("   ║ Active rows {}, active cols {}, pi {:.3f}\n", inst.get_active_rows_size(),
+                                           inst.get_active_cols().size(), pi);
+                                fmt::print("   ║ LB {:.1f}, UB {:.1f}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
+                                fmt::print("   ╚═════════════════════════════════════════════════════════════════════════\n\n");
                             }
                             break;
                         }
 
-                        --post_optimization_trials;
-                        SPH_VERBOSE(1) { fmt::print("  Iteration: {:2}; Best: {:.1f} \n", POST_OPT_TRIALS - post_optimization_trials, S_star.get_cost()); }
+                        SPH_VERBOSE(1) { fmt::print("  Iteration: {:2}; Best: {:.1f} \n", trial, S_star.get_cost()); }
 
                         pi = last_improving_pi;
                         last_improving_pi = std::max(PI_MIN, last_improving_pi / ALPHA);
@@ -2908,7 +2945,7 @@ namespace sph {
                     u_star = two_phase.get_global_u();
                     std::vector<idx_t> old_to_new_idx_map = inst.prune_instance<ROUTES_HARD_CAP>(u_star);
 
-                    SPH_VERBOSE(1) { fmt::print("Instance size: {}x{}\n", inst.get_nrows(), inst.get_ncols()); }
+                    SPH_VERBOSE(1) { fmt::print("  Instance size: {}x{}\n", inst.get_nrows(), inst.get_ncols()); }
 
                     if (!old_to_new_idx_map.empty()) {
                         for (idx_t& gj : S_star) {
@@ -2922,9 +2959,9 @@ namespace sph {
 
                 if (global_time_limit.exceeded_tlim()) {
                     SPH_VERBOSE(2) {
-                        fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
-                        fmt::print("║ Timelimit exceeded\n");
-                        fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
+                        fmt::print("   ╔═ REFINEMENT: iter {:3} ══════════════════════════════════════════════════\n", iter);
+                        fmt::print("   ║ Timelimit exceeded\n");
+                        fmt::print("   ╚═════════════════════════════════════════════════════════════════════════\n\n");
                     }
                     break;
                 }
@@ -2937,13 +2974,14 @@ namespace sph {
                 assert(cols_to_fix.size() <= S_star.size());
 
                 std::sort(cols_to_fix.begin(), cols_to_fix.end());
-                inst.fix_columns(cols_to_fix, covered_rows);
+                inst.fix_columns<KeepColStrategy>(cols_to_fix, covered_rows);
 
                 SPH_VERBOSE(2) {
-                    fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
-                    fmt::print("║ Active rows {}, active cols {}, pi {:.3f}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
-                    fmt::print("║ LB {:.1f}, UB {:.1f}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
-                    fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
+                    fmt::print("   ╔═ REFINEMENT: iter {:3} ══════════════════════════════════════════════════\n", iter);
+                    fmt::print("   ║ Active rows {}, active cols {}, pi {:.3f}\n", inst.get_active_rows_size(),
+                               inst.get_active_cols().size(), pi);
+                    fmt::print("   ║ LB {:.1f}, UB {:.1f}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
+                    fmt::print("   ╚═════════════════════════════════════════════════════════════════════════\n\n");
                 }
 
                 assert(inst.get_fixed_cost() <= S_star.get_cost());
@@ -3109,32 +3147,108 @@ namespace sph {
         [[nodiscard]] inline Column &get_col(idx_t idx) { return inst.get_col(idx); }
         [[nodiscard]] inline const Column &get_col(idx_t idx) const { return inst.get_col(idx); }
 
+        /**
+         * @brief Set the timelimit to <now> + <seconds>.
+         *          Thus, to run the algorithm for, e.g., 10 seconds,
+         *          call this function right before the solve method.
+         *
+         * @param seconds At how many second the timelimit is set.
+         */
         void inline set_timelimit(double seconds) { inst.set_timelimit(seconds); }
 
+        /**
+         * @brief Get the current timelimit set
+         *
+         * @return Timer&
+         */
         [[nodiscard]] inline Timer &get_timelimit() { return inst.get_timelimit(); }
 
+        /**
+         * @brief Call add_column for each one of the column in new_cols.
+         *
+         * @tparam UniqueColContainer Container type.
+         * @param new_cols New columns container.
+         * @return std::vector<idx_t> Vector of length costs.size(), mapping
+         *          each original column index to the index inside Instance.
+         */
         template <typename UniqueColContainer>
         std::vector<idx_t> inline add_columns(const UniqueColContainer &new_cols) {
             return inst.add_columns(new_cols);
         }
 
-        std::vector<idx_t> inline add_columns(const std::vector<real_t> &costs, const std::vector<real_t> &sol_costs, const std::vector<idx_t> &matbeg,
-                                              const std::vector<idx_t> &matval) {
+        /**
+         * @brief Call add_column for each one of the column represented in a CPLEX-like way.
+         *
+         * @param costs vector of costs one for each column
+         * @param sol_costs vector of solution cost of each column
+         * @param matbeg vector containing at index "i" the starting
+         *              position of column "i" rows inside matval
+         *              vector. Thus, column "i" will start from
+         *              matbeg[i] and end at matbeg[i+1]-1 (or at
+         *              matval.size() for the last column).
+         * @param matval vector containing all the columns in a contigous
+         *              representation.
+         * @return std::vector<idx_t> Vector of length costs.size(), mapping
+         *          each original column index to the index inside Instance.
+         */
+        std::vector<idx_t> inline add_columns(const std::vector<real_t> &costs, const std::vector<real_t> &sol_costs,
+                                              const std::vector<idx_t> &matbeg, const std::vector<idx_t> &matval) {
             return inst.add_columns(costs, sol_costs, matbeg, matval);
         }
 
+        /**
+         * @brief Tries to add a column into the current instance.
+         *      A column is added using an heuristic criterion:
+         *      for each column, two hash functions based only on
+         *      the rows of the column (and not on their order) are
+         *      computed. For every pair of such hashes only one
+         *      column is maintained inside the column set.
+         *      When a collision happens, the new column replace the
+         *      old one if at least one of these conditions holds:
+         *      1. Its the same column but with a better cost.
+         *      2. It belongs to a better solution.
+         *
+         * @tparam _Args args types
+         * @param args Argument to construct the column inplace.
+         * @return idx_t The index of the colums at the column
+         *              inserted, or that blocked the insertion.
+         */
         template <typename... _Args>
         idx_t add_column(_Args &&...args) {
             return inst.add_column(std::forward<_Args>(args)...);
         }
 
-        template <unsigned long ROUTES_HARD_CAP = SPH_INST_HARD_CAP>
+        /**
+         * @brief Call the sph main heuristic algorithm which tries to find the best
+         * solution it can in the timelimit set.
+         *
+         * @tparam ROUTES_HARD_CAP Maximum instance size. After the first iteration is
+         *          done, the lagrangian multiplier are used to filter out bad columns.
+         *          Three differnt criteria are used, for each one ROUTES_HARD_CAP set
+         *          the maximum amount of columns to select. Thus, in the worst case
+         *          scenario, 3 * ROUTES_HARD_CAP are selected. Usually, only
+         *          ~1.1 * ROUTES_HARD_CAP are selected, since the 3 criteria overlap.
+         *
+         * @tparam KeepColStrategy Choose betwee two fixing options:
+         *          1. SetPar_ActiveColTest: when an active column is fixed, all the
+         *              other active columns which overlap with at least one row, are
+         *              removed from the subinstace.
+         *          2. SetCov_ActiveColTest: when fixing a set of active columns,
+         *              only the ones that have at least one active row are maintained.
+         *              (to avoid empty columns inside the subinstance)
+         *
+         * @param S_init Initial solution for the algorithm.
+         *
+         * @return std::vector<idx_t> Best solution found.
+         */
+        template <unsigned long ROUTES_HARD_CAP = INST_HARD_CAP, typename KeepColStrategy = SetPar_ActiveColTest>
         std::vector<idx_t> inline solve([[maybe_unused]] const std::vector<idx_t> &S_init) {
             SPH_VERBOSE(0) { fmt::print(" Set Partitioning Heuristic: \n"); }
+            SPH_DEBUG { fmt::print(" Warning: running in debug mode\n"); }
             SPH_VERBOSE(0) { fmt::print(" SP Instance size: {}x{}\n", inst.get_nrows(), inst.get_ncols()); }
-            
-            GlobalSolution sol = refinement.solve<ROUTES_HARD_CAP>(S_init);
-            
+
+            GlobalSolution sol = refinement.solve<ROUTES_HARD_CAP, KeepColStrategy>(S_init);
+
             SPH_VERBOSE(0) { fmt::print(" Final solution value: {}\n", sol.get_cost()); }
             return sol;
         }

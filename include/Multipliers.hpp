@@ -9,8 +9,7 @@ namespace sph {
 
     class LocalMultipliers : public std::vector<real_t> {
     public:
-        template <typename... Args>
-        explicit LocalMultipliers(Args&&... _args) : std::vector<real_t>(std::forward<Args>(_args)...) { }
+        using std::vector<real_t>::vector;
 
         [[nodiscard]] inline real_t compute_lb(SubInstance& subinst) const {
             auto& cols = subinst.get_cols();
@@ -36,7 +35,8 @@ namespace sph {
         GlobalMultipliers& operator=(const GlobalMultipliers& other) = default;
         GlobalMultipliers& operator=(GlobalMultipliers&& other) = default;
 
-        GlobalMultipliers(SubInstance& subinst, LocalMultipliers mult) : std::vector<real_t>(subinst.get_instance().get_nrows(), 0.0), lb(REAL_LOWEST) {
+        GlobalMultipliers(SubInstance& subinst, LocalMultipliers mult)
+            : std::vector<real_t>(subinst.get_instance().get_nrows(), 0.0), lb(REAL_LOWEST) {
             for (idx_t i = 0; i < mult.size(); ++i) { (*this)[subinst.get_global_row_idx(i)] = mult[i]; }
             update_lb(subinst.get_instance());
         }

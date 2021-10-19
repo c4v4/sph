@@ -18,6 +18,38 @@ namespace sph {
     constexpr unsigned SUBINST_HARD_CAP = 15'000U;
 
     /**
+     * @brief
+     * Tell "Instance::fix_columns" what to do when a column contains a
+     * row covered by another fixed column.
+     * Set Partitioning: keep only columns that cover uncovered rows.
+     *
+     */
+    struct SetPar_ActiveColTest {
+        bool operator()(const UniqueCol &col, std::vector<bool> active_rows) const {
+            for (idx_t i : col) {
+                if (!active_rows[i]) { return false; }  // discard
+            }
+            return true;  // keep
+        }
+    };
+
+    /**
+     * @brief
+     * Tell "Instance::fix_columns" what to do when a column contains a
+     * row covered by another fixed column.
+     * Set Covering: keep all the columns that contain an uncovered row.
+     *
+     */
+    struct SetCov_ActiveColTest {
+        bool operator()(const UniqueCol &col, std::vector<bool> active_rows) const {
+            for (idx_t i : col) {
+                if (active_rows[i]) { return true; }  // keep
+            }
+            return false;  // discard
+        }
+    };
+
+    /**
      * @brief Represents a complete instance of a Set Partitioning problem.
      *
      */
@@ -44,13 +76,27 @@ namespace sph {
             return active_rows[gi];
         }
 
+        template <typename KeepColStrategy>
         void inline fix_columns(const std::vector<idx_t> &idxs) {
             for (idx_t j : idxs) {
                 for (idx_t i : cols[j]) { active_rows[i] = false; }
             }
 
-            _fix_columns(idxs);
+            _fix_columns<KeepColStrategy>(idxs);
         }
+
+        template <typename KeepColStrategy>
+        void fix_columns(const std::vector<idx_t> &idxs, const MStar &M_star) {
+            assert(fixed_cols.empty());
+            assert(active_rows.size() == nrows);
+            assert(M_star.size() == nrows);
+
+            for (idx_t i = 0; i < nrows; ++i) { active_rows[i] = !M_star[i]; }
+            nactive_rows = M_star.get_uncovered();
+
+            _fix_columns<KeepColStrategy>(idxs);
+        }
+
 
         void reset_fixing() {
             assert(std::is_sorted(active_cols.begin(), active_cols.end()));
@@ -64,17 +110,6 @@ namespace sph {
 
             fixed_cols.clear();
             fixed_cost = 0.0;
-        }
-
-        void fix_columns(const std::vector<idx_t> &idxs, const MStar &M_star) {
-            assert(fixed_cols.empty());
-            assert(active_rows.size() == nrows);
-            assert(M_star.size() == nrows);
-
-            for (idx_t i = 0; i < nrows; ++i) { active_rows[i] = !M_star[i]; }
-            nactive_rows = M_star.get_uncovered();
-
-            _fix_columns(idxs);
         }
 
         template <typename... _Args>
@@ -113,7 +148,8 @@ namespace sph {
         }
 
         template <typename CostVec, typename SolCostVec, typename MatBegVec, typename MatValVec>
-        std::vector<idx_t> add_columns(const CostVec &costs, const SolCostVec &sol_costs, const MatBegVec &matbeg, const MatValVec &matval) {
+        std::vector<idx_t> add_columns(const CostVec &costs, const SolCostVec &sol_costs, const MatBegVec &matbeg,
+                                       const MatValVec &matval) {
             assert(costs.size() == sol_costs.size() && costs.size() <= matbeg.size());
 
             idx_t ncols = costs.size();
@@ -123,14 +159,14 @@ namespace sph {
 
             for (idx_t j = 0; j < ncols - 1; ++j) {
                 idx_t inserted_idx = add_column(&matval[matbeg[j]], &matval[matbeg[j + 1]], costs[j], sol_costs[j]);
-                if (inserted_idx != NOT_AN_INDEX) { inserted_cols_idxs.emplace_back(inserted_idx); }
+                inserted_cols_idxs.emplace_back(inserted_idx);
             }
 
             // Matbeg might prbably contains only the starts
             idx_t inserted_idx = add_column(&matval[matbeg[ncols - 1]], &matval[matval.size() - 1], costs[ncols - 1], sol_costs[ncols - 1]);
-            if (inserted_idx != NOT_AN_INDEX) { inserted_cols_idxs.emplace_back(inserted_idx); }
+            inserted_cols_idxs.emplace_back(inserted_idx);
 
-            assert(cols.size() == costs.size());
+            assert(cols.size() <= costs.size());
             return inserted_cols_idxs;
         }
 
@@ -385,16 +421,11 @@ namespace sph {
             }
         }
 
+        template <typename KeepColStrategy>
         void _fix_columns(const std::vector<idx_t> &idxs) {
             idx_t iok = 0;
             for (idx_t j = 0; j < cols.size(); ++j) {
-                auto &col = cols[j];
-                for (idx_t i : col) {
-                    if (active_rows[i]) {
-                        active_cols[iok++] = j;
-                        break;
-                    }
-                }
+                if (KeepColStrategy()(cols[j], active_rows)) { active_cols[iok++] = j; }
             }
 
             active_cols.resize(iok);

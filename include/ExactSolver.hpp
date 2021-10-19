@@ -180,11 +180,11 @@ namespace sph {
             SET_INT(CPXPARAM_MIP_Display, 2);
             SET_INT(CPXPARAM_Threads, 1);
             SET_INT(CPXPARAM_Emphasis_MIP, CPX_MIPEMPHASIS_OPTIMALITY);
-            tlim = std::min(tlim, 0.1);
+            tlim = std::max(tlim, 0.1);
             SET_DBL(CPXPARAM_MIP_PolishAfter_Time, tlim * 0.5);
             SET_DBL(CPXPARAM_TimeLimit, tlim);
 
-            SPH_VERBOSE(3) { SET_INT(CPXPARAM_ScreenOutput, CPX_ON); }
+            SPH_VERBOSE(4) { SET_INT(CPXPARAM_ScreenOutput, CPX_ON); }
 
             return 0;
         }

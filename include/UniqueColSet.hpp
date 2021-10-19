@@ -11,9 +11,7 @@ namespace sph {
     class UniqueColSet {
     private:
         struct Hash {
-            size_t operator()(const UniqueCol &column) const {
-                return column.size() ^ column.get_comb_hash1() ^ column.get_comb_hash2();
-            }
+            size_t operator()(const UniqueCol &column) const { return column.size() ^ column.get_comb_hash1() ^ column.get_comb_hash2(); }
         };
 
     public:
@@ -34,7 +32,7 @@ namespace sph {
                    (candidate_elem.size() == set_elem->size() && candidate_elem.get_comb_hash1() == set_elem->get_comb_hash1() &&
                     candidate_elem.get_comb_hash2() == set_elem->get_comb_hash2()));
 
-            if (!inserted_new) {  // ==> same combination and size
+            if (!inserted_new) {                                               // ==> same combination and size
                 if (candidate_elem.get_solcost() < set_elem->get_solcost() ||  // Keep the one belonging to the best sol ...
                     candidate_elem < *set_elem) {                              // ... or the dominant one
                     *set_elem = std::move(candidate_elem);

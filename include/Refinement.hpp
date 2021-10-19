@@ -13,7 +13,7 @@ namespace sph {
     constexpr double PI_MIN = 0.3;
 
     constexpr double PI_MAX = 0.9;
-    constexpr unsigned POST_OPT_TRIALS = 100;
+    constexpr unsigned TRIALS = 1000;
 
     constexpr double SHORT_T_LIM = 10.0;
 
@@ -24,8 +24,18 @@ namespace sph {
         Refinement(Instance& inst_, std::mt19937& rnd_) : inst(inst_), subinst(inst_), two_phase(subinst), rnd(rnd_) { }
 
         // S_init must be a global complete solution
-        template <unsigned long ROUTES_HARD_CAP>
+        template <unsigned long ROUTES_HARD_CAP, typename KeepColStrategy = SetPar_ActiveColTest>
         GlobalSolution solve([[maybe_unused]] const std::vector<idx_t>& S_init) {
+
+            SPH_VERBOSE(1) {
+                if constexpr (std::is_same_v<KeepColStrategy, SetPar_ActiveColTest>) {
+                    fmt::print("  Using Set Partitioning fixing strategy (overlaps are forbidden).\n");
+                } else if (std::is_same_v<KeepColStrategy, SetCov_ActiveColTest>) {
+                    fmt::print("  Using Set Covering fixing strategy (overlaps are alowed).\n");
+                } else {
+                    fmt::print(stderr, "  Warning: Using unkown fixing strategy.\n");
+                }
+            }
 
             inst.reset_fixing();
 
@@ -36,12 +46,13 @@ namespace sph {
                 for (auto j : S_init) { S_star.push_back(j); }
                 S_star.set_cost(cost);
                 SPH_VERBOSE(1) {
-                    fmt::print("Found warm start of cost {}.\n", cost);
+                    fmt::print("  Found warm start of cost {}.\n", cost);
                     SPH_VERBOSE(2) {
                         for (idx_t gj : S_star) {
                             Column col = inst.get_col(gj);
-                            fmt::print("idx: {}, cost: {}, sol cost: {}\n", gj, col.get_cost(), col.get_solcost());
+                            fmt::print("   idx: {}, cost: {}, sol cost: {}\n", gj, col.get_cost(), col.get_solcost());
                         }
+                        fmt::print("\n");
                     }
                 }
             }
@@ -51,7 +62,7 @@ namespace sph {
             real_t pi = PI_MIN;
             real_t last_improving_pi = pi;
 
-            int post_optimization_trials = POST_OPT_TRIALS;
+            unsigned trial = 0;
             Timer& global_time_limit = inst.get_timelimit();
 
             idx_t iter = 1;
@@ -75,19 +86,20 @@ namespace sph {
 
                     if (S_star.get_cost() - 1.0 <= BETA * u_star.get_lb() || pi > PI_MAX || inst.get_active_rows_size() <= 0) {
 
-                        if (post_optimization_trials <= 0) {
+                        if (trial++ > TRIALS) {
                             SPH_VERBOSE(2) {
-                                fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
-                                fmt::print("║ Early Exit: β(={:.1f}) * LB(={:.1f}) > UB(={:.1f}) - 1\n", BETA, u_star.get_lb(), S_star.get_cost());
-                                fmt::print("║ Active rows {}, active cols {}, pi {:.3f}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
-                                fmt::print("║ LB {:.1f}, UB {:.1f}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
-                                fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
+                                fmt::print("   ╔═ REFINEMENT: iter {:3} ══════════════════════════════════════════════════\n", iter);
+                                fmt::print("   ║ Early Exit: β(={:.1f}) * LB(={:.1f}) > UB(={:.1f}) - 1\n", BETA, u_star.get_lb(),
+                                           S_star.get_cost());
+                                fmt::print("   ║ Active rows {}, active cols {}, pi {:.3f}\n", inst.get_active_rows_size(),
+                                           inst.get_active_cols().size(), pi);
+                                fmt::print("   ║ LB {:.1f}, UB {:.1f}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
+                                fmt::print("   ╚═════════════════════════════════════════════════════════════════════════\n\n");
                             }
                             break;
                         }
 
-                        --post_optimization_trials;
-                        SPH_VERBOSE(1) { fmt::print("  Iteration: {:2}; Best: {:.1f} \n", POST_OPT_TRIALS - post_optimization_trials, S_star.get_cost()); }
+                        SPH_VERBOSE(1) { fmt::print("  Iteration: {:2}; Best: {:.1f} \n\n", trial, S_star.get_cost()); }
 
                         pi = last_improving_pi;
                         last_improving_pi = std::max(PI_MIN, last_improving_pi / ALPHA);
@@ -98,7 +110,7 @@ namespace sph {
                     u_star = two_phase.get_global_u();
                     std::vector<idx_t> old_to_new_idx_map = inst.prune_instance<ROUTES_HARD_CAP>(u_star);
 
-                    SPH_VERBOSE(1) { fmt::print("Instance size: {}x{}\n", inst.get_nrows(), inst.get_ncols()); }
+                    SPH_VERBOSE(1) { fmt::print("  Instance size: {}x{}\n", inst.get_nrows(), inst.get_ncols()); }
 
                     if (!old_to_new_idx_map.empty()) {
                         for (idx_t& gj : S_star) {
@@ -112,9 +124,9 @@ namespace sph {
 
                 if (global_time_limit.exceeded_tlim()) {
                     SPH_VERBOSE(2) {
-                        fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
-                        fmt::print("║ Timelimit exceeded\n");
-                        fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
+                        fmt::print("   ╔═ REFINEMENT: iter {:3} ══════════════════════════════════════════════════\n", iter);
+                        fmt::print("   ║ Timelimit exceeded\n");
+                        fmt::print("   ╚═════════════════════════════════════════════════════════════════════════\n\n");
                     }
                     break;
                 }
@@ -127,13 +139,14 @@ namespace sph {
                 assert(cols_to_fix.size() <= S_star.size());
 
                 std::sort(cols_to_fix.begin(), cols_to_fix.end());
-                inst.fix_columns(cols_to_fix, covered_rows);
+                inst.fix_columns<KeepColStrategy>(cols_to_fix, covered_rows);
 
                 SPH_VERBOSE(2) {
-                    fmt::print("╔═ REFINEMENT: iter {:2} ═════════════════════════════════════════════════════════════\n", iter);
-                    fmt::print("║ Active rows {}, active cols {}, pi {:.3f}\n", inst.get_active_rows_size(), inst.get_active_cols().size(), pi);
-                    fmt::print("║ LB {:.1f}, UB {:.1f}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
-                    fmt::print("╚═══════════════════════════════════════════════════════════════════════════════════\n\n");
+                    fmt::print("   ╔═ REFINEMENT: iter {:3} ══════════════════════════════════════════════════\n", iter);
+                    fmt::print("   ║ Active rows {}, active cols {}, pi {:.3f}\n", inst.get_active_rows_size(),
+                               inst.get_active_cols().size(), pi);
+                    fmt::print("   ║ LB {:.1f}, UB {:.1f}, UB size {}\n", u_star.get_lb(), S_star.get_cost(), S_star.size());
+                    fmt::print("   ╚═════════════════════════════════════════════════════════════════════════\n\n");
                 }
 
                 assert(inst.get_fixed_cost() <= S_star.get_cost());

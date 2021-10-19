@@ -14,7 +14,6 @@ namespace sph {
      * However, in the end they are simply a vector of indexes plus some utility functions attached to them.
      */
     class LocalSolution;
-    class LocalSolution;
     class GlobalSolution;
 
     class BaseSolution : public std::vector<idx_t> {
@@ -33,8 +32,6 @@ namespace sph {
         }
 
         inline void remove(std::vector<idx_t>& col_idxs) {
-            //  assuming n >> n', n: sol size, n': cols to remove
-
             std::sort(col_idxs.begin(), col_idxs.end());  // O(n' log(n'))
             idx_t removed_counter = col_idxs.size();
 
