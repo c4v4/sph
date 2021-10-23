@@ -1010,18 +1010,21 @@ namespace sph {
      */
     class Instance {
     public:
-        explicit Instance(const idx_t nrows_) : nrows(nrows_), active_rows(nrows, true), nactive_rows(nrows), fixed_cost(0.0) { }
+        explicit Instance(const idx_t nrows_)
+            : nrows(nrows_), active_rows(nrows, true), nactive_rows(nrows), fixed_cost(0.0), ncols_constr(0) { }
 
-        [[nodiscard]] inline auto get_ncols() const { return cols.size(); }
+        [[nodiscard]] inline idx_t get_ncols() const { return cols.size(); }
         [[nodiscard]] inline idx_t get_nrows() const { return nrows; }
         [[nodiscard]] inline idx_t get_active_rows_size() const { return nactive_rows; }
 
-        [[nodiscard]] inline auto &get_active_cols() { return active_cols; }
-        [[nodiscard]] inline auto &get_fixed_cols() { return fixed_cols; }
-        [[nodiscard]] inline auto &get_cols() { return cols; }
+        [[nodiscard]] inline std::vector<idx_t> &get_active_cols() { return active_cols; }
+        [[nodiscard]] inline std::vector<idx_t> &get_fixed_cols() { return fixed_cols; }
+        [[nodiscard]] inline UniqueColSet &get_cols() { return cols; }
         [[nodiscard]] inline Column &get_col(idx_t idx) { return cols[idx]; }
         [[nodiscard]] inline const Column &get_col(idx_t idx) const { return cols[idx]; }
-        [[nodiscard]] inline real_t get_fixed_cost() { return fixed_cost; }
+        [[nodiscard]] inline real_t get_fixed_cost() const { return fixed_cost; }
+        [[nodiscard]] inline idx_t get_ncols_constr() const { return std::max<idx_t>(0, ncols_constr - fixed_cols.size()); }
+        inline void set_ncols_constr(idx_t ncols_constr_) { ncols_constr = ncols_constr_; }
 
         inline void set_timelimit(double seconds) { timelimit = Timer(seconds); }
         [[nodiscard]] inline Timer &get_timelimit() { return timelimit; }
@@ -1399,6 +1402,7 @@ namespace sph {
         std::vector<bool> active_rows;
         idx_t nactive_rows;
         real_t fixed_cost;
+        idx_t ncols_constr;
         Priced_Columns priced_cols;
         MStar covering_times;
 
@@ -1437,28 +1441,29 @@ namespace sph {
     public:
         explicit SubInstance(Instance &inst_) : inst(inst_), fixed_cost(inst_.get_fixed_cost()) { }
 
-        [[nodiscard]] inline auto get_ncols() const { return cols.size(); }
-        [[nodiscard]] inline auto get_nrows() const { return rows.size(); }
+        [[nodiscard]] inline idx_t get_ncols() const { return cols.size(); }
+        [[nodiscard]] inline idx_t get_nrows() const { return rows.size(); }
 
-        [[nodiscard]] inline auto get_global_col_idx(idx_t local_j) const { return local_to_global_col_idxs[local_j]; }
-        [[nodiscard]] inline auto get_global_row_idx(idx_t local_i) const { return local_to_global_row_idxs[local_i]; }
-        [[nodiscard]] inline auto get_local_row_idx(idx_t global_i) const { return global_to_local_row_idxs[global_i]; }
+        [[nodiscard]] inline idx_t get_global_col_idx(idx_t local_j) const { return local_to_global_col_idxs[local_j]; }
+        [[nodiscard]] inline idx_t get_global_row_idx(idx_t local_i) const { return local_to_global_row_idxs[local_i]; }
+        [[nodiscard]] inline idx_t get_local_row_idx(idx_t global_i) const { return global_to_local_row_idxs[global_i]; }
 
-        [[nodiscard]] inline auto &get_cols() { return cols; }
-        [[nodiscard]] inline auto &get_rows() { return rows; }
+        [[nodiscard]] inline SubInstCols &get_cols() { return cols; }
+        [[nodiscard]] inline std::vector<Row> &get_rows() { return rows; }
 
-        [[nodiscard]] inline const auto &get_cols() const { return cols; }
-        [[nodiscard]] inline const auto &get_rows() const { return rows; }
+        [[nodiscard]] inline const SubInstCols &get_cols() const { return cols; }
+        [[nodiscard]] inline const std::vector<Row> &get_rows() const { return rows; }
 
-        [[nodiscard]] inline auto &get_col(idx_t idx) { return cols[idx]; }
-        [[nodiscard]] inline auto &get_row(idx_t idx) { return rows[idx]; }
+        [[nodiscard]] inline SubInstCol &get_col(idx_t idx) { return cols[idx]; }
+        [[nodiscard]] inline Row &get_row(idx_t idx) { return rows[idx]; }
 
-        [[nodiscard]] inline const auto &get_col(idx_t idx) const { return cols[idx]; }
-        [[nodiscard]] inline const auto &get_row(idx_t idx) const { return rows[idx]; }
+        [[nodiscard]] inline const SubInstCol &get_col(idx_t idx) const { return cols[idx]; }
+        [[nodiscard]] inline const Row &get_row(idx_t idx) const { return rows[idx]; }
 
-        [[nodiscard]] inline auto &get_fixed_cols() { return fixed_cols_global_idxs; }
-        [[nodiscard]] inline auto get_fixed_cost() const { return fixed_cost; }
-        [[nodiscard]] inline auto &get_instance() { return inst; }
+        [[nodiscard]] inline std::vector<idx_t> &get_fixed_cols() { return fixed_cols_global_idxs; }
+        [[nodiscard]] inline real_t get_fixed_cost() const { return fixed_cost; }
+        [[nodiscard]] inline idx_t get_ncols_constr() const { return ncols_constr; }
+        [[nodiscard]] inline Instance &get_instance() { return inst; }
 
         [[nodiscard]] Timer &get_timelimit() { return inst.get_timelimit(); }
 
@@ -1658,6 +1663,7 @@ namespace sph {
             local_to_global_col_idxs.clear();
             fixed_cols_global_idxs.clear();
             fixed_cost = inst.get_fixed_cost();
+            ncols_constr = inst.get_ncols_constr();
 
             inst.fill_with_best_columns(local_to_global_col_idxs);
             replace_columns(local_to_global_col_idxs);
@@ -1705,6 +1711,8 @@ namespace sph {
 
             fixed_cost = inst.get_fixed_cost();
             for (idx_t gj : fixed_cols_global_idxs) { fixed_cost += inst.get_col(gj).get_cost(); }
+
+            if (inst.get_ncols_constr() > 0) { ncols_constr = inst.get_ncols_constr() - inst.get_fixed_cols().size(); }
 
             // compact rows
             idx_t li = 0;
@@ -1805,6 +1813,7 @@ namespace sph {
 
         std::vector<real_t> global_u_k;
         real_t fixed_cost;
+        idx_t ncols_constr = 0;
     };
 
 }  // namespace sph
@@ -2042,8 +2051,14 @@ namespace sph {
                 return res;
             }
 
-            if ((res = add_constraints(subinst))) {
+            if ((res = add_cov_constraints(subinst))) {
                 fmt::print(stderr, "Error creating rows! (errno: {})\n", res);
+                return res;
+            }
+
+            idx_t col_num_constr = subinst.get_ncols_constr();
+            if (col_num_constr > 0 && (res = add_maxcols_constraint(subinst, col_num_constr))) {
+                fmt::print(stderr, "Error creating max cols constr! (errno: {})\n", res);
                 return res;
             }
 
@@ -2064,7 +2079,7 @@ namespace sph {
             return CPXnewcols(env, lp, ncols, dbl_vals.data(), lb.data(), ones.data(), ctype.data(), nullptr);
         }
 
-        int add_constraints(SubInstance& subinst) {
+        int add_cov_constraints(SubInstance& subinst) {
             std::vector<Row>& rows = subinst.get_rows();
             idx_t nrows = subinst.get_nrows();
 
@@ -2085,6 +2100,19 @@ namespace sph {
             return CPXaddrows(env, lp, 0, nrows, nzcount, ones.data(), sense.data(), rmatbeg.data(), rmatind.data(), ones.data(), nullptr,
                               nullptr);
         }
+
+        int add_maxcols_constraint(SubInstance& subinst, double col_num_constr) {
+            idx_t ncols = subinst.get_ncols();
+
+            int beg = 0;
+            rmatind.resize(ncols);
+            std::iota(rmatind.begin(), rmatind.end(), 0);
+            ASSIGN_UP(ones, static_cast<size_t>(ncols), 1.0);
+            char s = 'E';
+
+            return CPXaddrows(env, lp, 0, 1, ncols, &col_num_constr, &s, &beg, rmatind.data(), ones.data(), nullptr, nullptr);
+        }
+
 
         int set_warmstart(LocalSolution& warmstart) {
             idx_t wsize = warmstart.size();
@@ -2888,6 +2916,7 @@ namespace sph {
                             Column col = inst.get_col(gj);
                             fmt::print("   idx: {}, cost: {}, sol cost: {}\n", gj, col.get_cost(), col.get_solcost());
                         }
+                        fmt::print("\n");
                     }
                 }
             }
@@ -3146,6 +3175,13 @@ namespace sph {
         [[nodiscard]] inline UniqueColSet &get_cols() { return inst.get_cols(); }
         [[nodiscard]] inline Column &get_col(idx_t idx) { return inst.get_col(idx); }
         [[nodiscard]] inline const Column &get_col(idx_t idx) const { return inst.get_col(idx); }
+
+        /**
+         * @brief Set the ncols constr constraint rhs
+         *
+         * @param ncols_constr
+         */
+        inline void set_ncols_constr(idx_t ncols_constr) { inst.set_ncols_constr(ncols_constr); }
 
         /**
          * @brief Set the timelimit to <now> + <seconds>.

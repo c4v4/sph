@@ -1,7 +1,7 @@
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 
-#define VERBOSE_LEVEL 2
+#define VERBOSE_LEVEL 1
 
 #ifndef NDEBUG
 #include "SPHeuristic.hpp"
@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
     std::vector<sph::idx_t> inserted_idxs = sph.add_columns(data.costs, data.solcosts, data.matbeg, data.matval);
     for (sph::idx_t& gj : data.warmstart) { gj = inserted_idxs[gj]; }
     sph.set_timelimit(tlim);
+    sph.set_ncols_constr(data.warmstart.size());
 
     auto solution = sph.solve<sph::INST_HARD_CAP, sph::SetPar_ActiveColTest>(data.warmstart);
 

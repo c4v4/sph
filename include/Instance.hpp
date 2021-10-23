@@ -55,18 +55,21 @@ namespace sph {
      */
     class Instance {
     public:
-        explicit Instance(const idx_t nrows_) : nrows(nrows_), active_rows(nrows, true), nactive_rows(nrows), fixed_cost(0.0) { }
+        explicit Instance(const idx_t nrows_)
+            : nrows(nrows_), active_rows(nrows, true), nactive_rows(nrows), fixed_cost(0.0), ncols_constr(0) { }
 
-        [[nodiscard]] inline auto get_ncols() const { return cols.size(); }
+        [[nodiscard]] inline idx_t get_ncols() const { return cols.size(); }
         [[nodiscard]] inline idx_t get_nrows() const { return nrows; }
         [[nodiscard]] inline idx_t get_active_rows_size() const { return nactive_rows; }
 
-        [[nodiscard]] inline auto &get_active_cols() { return active_cols; }
-        [[nodiscard]] inline auto &get_fixed_cols() { return fixed_cols; }
-        [[nodiscard]] inline auto &get_cols() { return cols; }
+        [[nodiscard]] inline std::vector<idx_t> &get_active_cols() { return active_cols; }
+        [[nodiscard]] inline std::vector<idx_t> &get_fixed_cols() { return fixed_cols; }
+        [[nodiscard]] inline UniqueColSet &get_cols() { return cols; }
         [[nodiscard]] inline Column &get_col(idx_t idx) { return cols[idx]; }
         [[nodiscard]] inline const Column &get_col(idx_t idx) const { return cols[idx]; }
-        [[nodiscard]] inline real_t get_fixed_cost() { return fixed_cost; }
+        [[nodiscard]] inline real_t get_fixed_cost() const { return fixed_cost; }
+        [[nodiscard]] inline idx_t get_ncols_constr() const { return std::max<idx_t>(0, ncols_constr - fixed_cols.size()); }
+        inline void set_ncols_constr(idx_t ncols_constr_) { ncols_constr = ncols_constr_; }
 
         inline void set_timelimit(double seconds) { timelimit = Timer(seconds); }
         [[nodiscard]] inline Timer &get_timelimit() { return timelimit; }
@@ -444,6 +447,7 @@ namespace sph {
         std::vector<bool> active_rows;
         idx_t nactive_rows;
         real_t fixed_cost;
+        idx_t ncols_constr;
         Priced_Columns priced_cols;
         MStar covering_times;
 

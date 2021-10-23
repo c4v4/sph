@@ -22,28 +22,29 @@ namespace sph {
     public:
         explicit SubInstance(Instance &inst_) : inst(inst_), fixed_cost(inst_.get_fixed_cost()) { }
 
-        [[nodiscard]] inline auto get_ncols() const { return cols.size(); }
-        [[nodiscard]] inline auto get_nrows() const { return rows.size(); }
+        [[nodiscard]] inline idx_t get_ncols() const { return cols.size(); }
+        [[nodiscard]] inline idx_t get_nrows() const { return rows.size(); }
 
-        [[nodiscard]] inline auto get_global_col_idx(idx_t local_j) const { return local_to_global_col_idxs[local_j]; }
-        [[nodiscard]] inline auto get_global_row_idx(idx_t local_i) const { return local_to_global_row_idxs[local_i]; }
-        [[nodiscard]] inline auto get_local_row_idx(idx_t global_i) const { return global_to_local_row_idxs[global_i]; }
+        [[nodiscard]] inline idx_t get_global_col_idx(idx_t local_j) const { return local_to_global_col_idxs[local_j]; }
+        [[nodiscard]] inline idx_t get_global_row_idx(idx_t local_i) const { return local_to_global_row_idxs[local_i]; }
+        [[nodiscard]] inline idx_t get_local_row_idx(idx_t global_i) const { return global_to_local_row_idxs[global_i]; }
 
-        [[nodiscard]] inline auto &get_cols() { return cols; }
-        [[nodiscard]] inline auto &get_rows() { return rows; }
+        [[nodiscard]] inline SubInstCols &get_cols() { return cols; }
+        [[nodiscard]] inline std::vector<Row> &get_rows() { return rows; }
 
-        [[nodiscard]] inline const auto &get_cols() const { return cols; }
-        [[nodiscard]] inline const auto &get_rows() const { return rows; }
+        [[nodiscard]] inline const SubInstCols &get_cols() const { return cols; }
+        [[nodiscard]] inline const std::vector<Row> &get_rows() const { return rows; }
 
-        [[nodiscard]] inline auto &get_col(idx_t idx) { return cols[idx]; }
-        [[nodiscard]] inline auto &get_row(idx_t idx) { return rows[idx]; }
+        [[nodiscard]] inline SubInstCol &get_col(idx_t idx) { return cols[idx]; }
+        [[nodiscard]] inline Row &get_row(idx_t idx) { return rows[idx]; }
 
-        [[nodiscard]] inline const auto &get_col(idx_t idx) const { return cols[idx]; }
-        [[nodiscard]] inline const auto &get_row(idx_t idx) const { return rows[idx]; }
+        [[nodiscard]] inline const SubInstCol &get_col(idx_t idx) const { return cols[idx]; }
+        [[nodiscard]] inline const Row &get_row(idx_t idx) const { return rows[idx]; }
 
-        [[nodiscard]] inline auto &get_fixed_cols() { return fixed_cols_global_idxs; }
-        [[nodiscard]] inline auto get_fixed_cost() const { return fixed_cost; }
-        [[nodiscard]] inline auto &get_instance() { return inst; }
+        [[nodiscard]] inline std::vector<idx_t> &get_fixed_cols() { return fixed_cols_global_idxs; }
+        [[nodiscard]] inline real_t get_fixed_cost() const { return fixed_cost; }
+        [[nodiscard]] inline idx_t get_ncols_constr() const { return ncols_constr; }
+        [[nodiscard]] inline Instance &get_instance() { return inst; }
 
         [[nodiscard]] Timer &get_timelimit() { return inst.get_timelimit(); }
 
@@ -243,6 +244,7 @@ namespace sph {
             local_to_global_col_idxs.clear();
             fixed_cols_global_idxs.clear();
             fixed_cost = inst.get_fixed_cost();
+            ncols_constr = inst.get_ncols_constr();
 
             inst.fill_with_best_columns(local_to_global_col_idxs);
             replace_columns(local_to_global_col_idxs);
@@ -290,6 +292,8 @@ namespace sph {
 
             fixed_cost = inst.get_fixed_cost();
             for (idx_t gj : fixed_cols_global_idxs) { fixed_cost += inst.get_col(gj).get_cost(); }
+
+            if (inst.get_ncols_constr() > 0) { ncols_constr = inst.get_ncols_constr() - inst.get_fixed_cols().size(); }
 
             // compact rows
             idx_t li = 0;
@@ -390,6 +394,7 @@ namespace sph {
 
         std::vector<real_t> global_u_k;
         real_t fixed_cost;
+        idx_t ncols_constr = 0;
     };
 
 }  // namespace sph

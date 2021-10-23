@@ -20,6 +20,13 @@ namespace sph {
         [[nodiscard]] inline const Column &get_col(idx_t idx) const { return inst.get_col(idx); }
 
         /**
+         * @brief Set the ncols constr constraint rhs
+         *
+         * @param ncols_constr
+         */
+        inline void set_ncols_constr(idx_t ncols_constr) { inst.set_ncols_constr(ncols_constr); }
+
+        /**
          * @brief Set the timelimit to <now> + <seconds>.
          *          Thus, to run the algorithm for, e.g., 10 seconds,
          *          call this function right before the solve method.

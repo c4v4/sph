@@ -99,7 +99,7 @@ namespace sph {
                             break;
                         }
 
-                        SPH_VERBOSE(1) { fmt::print("  Iteration: {:2}; Best: {:.1f} \n\n", trial, S_star.get_cost()); }
+                        SPH_VERBOSE(1) { fmt::print("  Iteration: {:2}; Best: {:.1f} \n", trial, S_star.get_cost()); }
 
                         pi = last_improving_pi;
                         last_improving_pi = std::max(PI_MIN, last_improving_pi / ALPHA);

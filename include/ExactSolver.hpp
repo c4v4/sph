@@ -109,8 +109,14 @@ namespace sph {
                 return res;
             }
 
-            if ((res = add_constraints(subinst))) {
+            if ((res = add_cov_constraints(subinst))) {
                 fmt::print(stderr, "Error creating rows! (errno: {})\n", res);
+                return res;
+            }
+
+            idx_t col_num_constr = subinst.get_ncols_constr();
+            if (col_num_constr > 0 && (res = add_maxcols_constraint(subinst, col_num_constr))) {
+                fmt::print(stderr, "Error creating max cols constr! (errno: {})\n", res);
                 return res;
             }
 
@@ -131,7 +137,7 @@ namespace sph {
             return CPXnewcols(env, lp, ncols, dbl_vals.data(), lb.data(), ones.data(), ctype.data(), nullptr);
         }
 
-        int add_constraints(SubInstance& subinst) {
+        int add_cov_constraints(SubInstance& subinst) {
             std::vector<Row>& rows = subinst.get_rows();
             idx_t nrows = subinst.get_nrows();
 
@@ -152,6 +158,19 @@ namespace sph {
             return CPXaddrows(env, lp, 0, nrows, nzcount, ones.data(), sense.data(), rmatbeg.data(), rmatind.data(), ones.data(), nullptr,
                               nullptr);
         }
+
+        int add_maxcols_constraint(SubInstance& subinst, double col_num_constr) {
+            idx_t ncols = subinst.get_ncols();
+
+            int beg = 0;
+            rmatind.resize(ncols);
+            std::iota(rmatind.begin(), rmatind.end(), 0);
+            ASSIGN_UP(ones, static_cast<size_t>(ncols), 1.0);
+            char s = 'E';
+
+            return CPXaddrows(env, lp, 0, 1, ncols, &col_num_constr, &s, &beg, rmatind.data(), ones.data(), nullptr, nullptr);
+        }
+
 
         int set_warmstart(LocalSolution& warmstart) {
             idx_t wsize = warmstart.size();
