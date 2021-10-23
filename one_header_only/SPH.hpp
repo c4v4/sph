@@ -702,7 +702,9 @@ namespace cav {
         template <typename Iter>
         VectorSet(Iter beg, Iter end) {
             reserve(end - beg);
-            for (auto it = beg; it != end; ++it) { emplace_back(*it); }
+            for (auto it = beg; it != end; ++it) {
+                emplace_back(*it);
+            }
         }
 
         VectorSet(const VectorSet& other) : vec(other.vec), set(other.set) { vec_data = vec.data(); }
@@ -732,13 +734,15 @@ namespace cav {
 
             auto set_elem_iter = set.find(wrapped_elem);
             if (set_elem_iter == set.end()) {
-                T& inserted = vec.emplace_back(std::move(elem));
+                vec.emplace_back(std::move(elem));
                 vec_data = vec.data();
-                set.emplace(vec_data, vec.size() - 1);
-                return std::make_pair<viter, bool>(viter(std::addressof(inserted)), true);
+                size_t elem_position = vec.size() - 1;
+                set.emplace(vec_data, elem_position);
+                return std::make_pair<viter, bool>(vec.begin() + elem_position, true);
             }
 
-            return std::make_pair<viter, bool>(viter(set_elem_iter->data()), false);
+            ptrdiff_t elem_position = set_elem_iter->data() - vec.data();
+            return std::make_pair<viter, bool>(vec.begin() + elem_position, false);
         }
 
         template <typename Tt>
@@ -773,7 +777,8 @@ namespace cav {
             auto wrapped_elem = TPtrWrap(elem_ptr, 0);
 
             const_siter found = set.find(wrapped_elem);
-            if (found != set.cend()) return const_viter(found->data());
+            if (found != set.cend())
+                return const_viter(found->data());
             return vec.cend();
         }
 
@@ -782,7 +787,8 @@ namespace cav {
             TPtrWrap wrapped_elem(elem_ptr, 0);
 
             siter found = set.find(wrapped_elem);
-            if (found != set.end()) return viter(found->data());
+            if (found != set.end())
+                return viter(found->data());
             return vec.end();
         }
 
@@ -3017,6 +3023,7 @@ namespace sph {
                 ++iter;
             } while (true);
 
+            SPH_VERBOSE(0) { fmt::print(" Final solution value: {}\n", S_star.get_cost()); }
             return S_star;
         }
 
@@ -3283,10 +3290,7 @@ namespace sph {
             SPH_DEBUG { fmt::print(" Warning: running in debug mode\n"); }
             SPH_VERBOSE(0) { fmt::print(" SP Instance size: {}x{}\n", inst.get_nrows(), inst.get_ncols()); }
 
-            GlobalSolution sol = refinement.solve<ROUTES_HARD_CAP, KeepColStrategy>(S_init);
-
-            SPH_VERBOSE(0) { fmt::print(" Final solution value: {}\n", sol.get_cost()); }
-            return sol;
+            return refinement.solve<ROUTES_HARD_CAP, KeepColStrategy>(S_init);
         }
 
     private:

@@ -153,6 +153,7 @@ namespace sph {
                 ++iter;
             } while (true);
 
+            SPH_VERBOSE(0) { fmt::print(" Final solution value: {}\n", S_star.get_cost()); }
             return S_star;
         }
 

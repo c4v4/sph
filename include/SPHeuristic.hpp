@@ -126,10 +126,7 @@ namespace sph {
             SPH_DEBUG { fmt::print(" Warning: running in debug mode\n"); }
             SPH_VERBOSE(0) { fmt::print(" SP Instance size: {}x{}\n", inst.get_nrows(), inst.get_ncols()); }
 
-            GlobalSolution sol = refinement.solve<ROUTES_HARD_CAP, KeepColStrategy>(S_init);
-
-            SPH_VERBOSE(0) { fmt::print(" Final solution value: {}\n", sol.get_cost()); }
-            return sol;
+            return refinement.solve<ROUTES_HARD_CAP, KeepColStrategy>(S_init);
         }
 
     private:
