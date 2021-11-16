@@ -1,8 +1,6 @@
 #ifndef SPH_INCLUDE_TWOPHASE_HPP_
 #define SPH_INCLUDE_TWOPHASE_HPP_
 
-#include "fmt/core.h"
-
 #include <algorithm>
 #include <cassert>
 #include <vector>
@@ -13,6 +11,7 @@
 #include "SubGradient.hpp"
 #include "SubInstance.hpp"
 #include "cft.hpp"
+#include "fmt/core.h"
 
 namespace sph {
 
@@ -38,8 +37,12 @@ namespace sph {
             real_t lcl_LB = subgradient.get_best_LB();
             real_t glb_LB = fixed_cost + lcl_LB;
 
-            if (fixed_cost == 0.0) { glo_u = GlobalMultipliers(subinst, u_k); }
-            if (glb_LB >= glb_UB_star - HAS_INTEGRAL_COSTS) { return S_star; }
+            if (fixed_cost == 0.0) {
+                glo_u = GlobalMultipliers(subinst, u_k);
+            }
+            if (glb_LB >= glb_UB_star - HAS_INTEGRAL_COSTS || subinst.get_nrows() == 0) {
+                return S_star;
+            }
 
             // 2. HEURISTIC PHASE
             LocalSolution S_curr(subinst.get_localized_solution(S_star));
@@ -59,7 +62,7 @@ namespace sph {
 
             LocalSolution S = exact.build_and_opt(subinst, S_init, exact_time_limit);
 
-            if (S.size() > 0) {
+            if (!S.empty()) {
 
                 real_t S_cost = S.compute_cost(subinst);
 
@@ -70,10 +73,16 @@ namespace sph {
 
                     glb_UB_star = gS_cost;
                     S_star = GlobalSolution(subinst, S);
-                    SPH_VERBOSE(3) { fmt::print("    │ ══> CPLEX improved global UB: {} (fixed {} + local-cost {})\n", S_star.get_cost(), fixed_cost, S_cost); }
+                    SPH_VERBOSE(3) {
+                        fmt::print("    │ ══> CPLEX improved global UB: {} (fixed {} + local-cost {})\n", S_star.get_cost(), fixed_cost,
+                                   S_cost);
+                    }
 
                 } else {
-                    SPH_VERBOSE(3) { fmt::print("    │ ──> CPLEX Improved local UB: {} (global value {}, best is {})\n", S_cost, S_cost + fixed_cost, glb_UB_star); }
+                    SPH_VERBOSE(3) {
+                        fmt::print("    │ ──> CPLEX Improved local UB: {} (global value {}, best is {})\n", S_cost, S_cost + fixed_cost,
+                                   glb_UB_star);
+                    }
                 }
             }
 

@@ -12,10 +12,14 @@
 namespace sph {
 
 #define RESIZE_UP(vec, sz) \
-    if (vec.size() < sz) { vec.resize(sz); }
+    if (vec.size() < sz) { \
+        vec.resize(sz);    \
+    }
 
 #define ASSIGN_UP(vec, sz, val) \
-    if (vec.size() < sz) { vec.assign(sz, val); }
+    if (vec.size() < sz) {      \
+        vec.assign(sz, val);    \
+    }
 
 #define SET_INT(P, VAL)                                                           \
     if (int res = 0; (res = CPXsetintparam(env, P, VAL))) {                       \
@@ -39,6 +43,9 @@ namespace sph {
         ~ExactSolver() { CPXcloseCPLEX(&env); }
 
         LocalSolution build_and_opt(SubInstance& subinst, LocalSolution& warmstart, Timer& time_limit) {
+            if (subinst.get_ncols() == 0 || subinst.get_nrows() == 0) {
+                return LocalSolution();
+            }
 
             lp = CPXcreateprob(env, nullptr, "exact");
             int res = 0;
@@ -48,7 +55,9 @@ namespace sph {
                 return LocalSolution();
             }
 
-            if ((res = set_warmstart(warmstart))) { fmt::print(stderr, "Error while setting warmstart (errno: {})\n", res); }
+            if ((res = set_warmstart(warmstart))) {
+                fmt::print(stderr, "Error while setting warmstart (errno: {})\n", res);
+            }
 
             if ((res = set_CPX_params(time_limit.seconds_until_end()))) {
                 fmt::print(stderr, "Error while setting parameter (errno: {})\n", res);
@@ -74,7 +83,9 @@ namespace sph {
 
             if (((res = CPXsolution(env, lp, &stat, &obj, dbl_vals.data(), nullptr, nullptr, nullptr) == 0))) {
                 for (int i = 0; i < ncols; ++i) {
-                    if (dbl_vals[i] > 0.5) { sol.emplace_back(i); }
+                    if (dbl_vals[i] > 0.5) {
+                        sol.emplace_back(i);
+                    }
                 }
 
                 MStar coverage(subinst.get_nrows());
@@ -180,7 +191,9 @@ namespace sph {
                 int effort = CPX_MIPSTART_NOCHECK;
                 ASSIGN_UP(ones, wsize, 1.0);
                 RESIZE_UP(rmatind, wsize);
-                for (idx_t n = 0; n < wsize; ++n) { rmatind[n] = warmstart[n]; }
+                for (idx_t n = 0; n < wsize; ++n) {
+                    rmatind[n] = warmstart[n];
+                }
 
                 return CPXaddmipstarts(env, lp, 1, wsize, &zero_int, rmatind.data(), ones.data(), &effort, nullptr);
             }

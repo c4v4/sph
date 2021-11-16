@@ -42,8 +42,12 @@ namespace sph {
             GlobalSolution S_star;
             if (!S_init.empty()) {
                 real_t cost = 0.0;
-                for (idx_t j : S_init) { cost += inst.get_col(j).get_cost(); }
-                for (auto j : S_init) { S_star.push_back(j); }
+                for (idx_t j : S_init) {
+                    cost += inst.get_col(j).get_cost();
+                }
+                for (auto j : S_init) {
+                    S_star.push_back(j);
+                }
                 S_star.set_cost(cost);
                 SPH_VERBOSE(1) {
                     fmt::print("  Found warm start of cost {}.\n", cost);
@@ -78,9 +82,7 @@ namespace sph {
 
                     if (S.get_cost() < S_star.get_cost()) {  // update best solution
                         S_star = std::move(S);               // 5.
-
                         last_improving_pi = pi;
-
                         pi = std::max(pi / (ALPHA * ALPHA), PI_MIN);  // 6.
                     }
 
@@ -168,7 +170,9 @@ namespace sph {
                 auto& col = cols[S_star[j]];
                 deltas[j].first = S_star[j];
                 deltas[j].second = std::max<real_t>(col.compute_lagr_cost(u_star), 0.0);
-                for (auto i : col) { deltas[j].second += u_star[i] * (covered_rows[i] - 1.0) / covered_rows[i]; }
+                for (auto i : col) {
+                    deltas[j].second += u_star[i] * (covered_rows[i] - 1.0) / covered_rows[i];
+                }
             }
             std::sort(deltas.begin(), deltas.end(), [](auto& a, auto& b) { return a.second < b.second; });
 
@@ -181,7 +185,9 @@ namespace sph {
             }
 
             cols_to_fix.resize(n);
-            for (idx_t j2 = 0; j2 < n; ++j2) { cols_to_fix[j2] = deltas[j2].first; }
+            for (idx_t j2 = 0; j2 < n; ++j2) {
+                cols_to_fix[j2] = deltas[j2].first;
+            }
 
             return cols_to_fix;
         }
@@ -214,7 +220,9 @@ namespace sph {
                 auto& col = cols[S_star[j]];
                 deltas[j].first = S_star[j];
                 deltas[j].second = std::max<real_t>(col.compute_lagr_cost(u_star), 0.0);
-                for (auto i : col) { deltas[j].second += u_star[i] * (covered_rows[i] - 1.0) / covered_rows[i]; }
+                for (auto i : col) {
+                    deltas[j].second += u_star[i] * (covered_rows[i] - 1.0) / covered_rows[i];
+                }
             }
 
             idx_t dsize = deltas.size();
@@ -226,7 +234,9 @@ namespace sph {
             for (; n < deltas.size() && dsize > 1 && covered_fraction < pi; ++n, --dsize) {
                 auto& cand1 = deltas[rnd() % dsize];
                 idx_t c2;
-                do { c2 = rnd() % dsize; } while (cand1.first == deltas[c2].first);
+                do {
+                    c2 = rnd() % dsize;
+                } while (cand1.first == deltas[c2].first);
                 auto& winner = cand1.second < deltas[c2].second ? cand1 : deltas[c2];
 
                 cols_to_fix[n] = winner.first;
@@ -251,7 +261,9 @@ namespace sph {
                 auto& col = cols[S_star[j]];
                 deltas[j].first = S_star[j];
                 deltas[j].second = std::max<real_t>(col.compute_lagr_cost(u_star), 0.0);
-                for (auto i : col) { deltas[j].second += u_star[i] * (covered_rows[i] - 1.0) / covered_rows[i]; }
+                for (auto i : col) {
+                    deltas[j].second += u_star[i] * (covered_rows[i] - 1.0) / covered_rows[i];
+                }
                 deltas[j].second *= dist(rnd);
             }
             std::sort(deltas.begin(), deltas.end(), [](auto& a, auto& b) { return a.second < b.second; });
@@ -265,7 +277,9 @@ namespace sph {
             }
 
             cols_to_fix.resize(n);
-            for (idx_t j2 = 0; j2 < n; ++j2) { cols_to_fix[j2] = deltas[j2].first; }
+            for (idx_t j2 = 0; j2 < n; ++j2) {
+                cols_to_fix[j2] = deltas[j2].first;
+            }
 
             return cols_to_fix;
         }

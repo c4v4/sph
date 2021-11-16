@@ -27,7 +27,9 @@ namespace sph {
     struct SetPar_ActiveColTest {
         bool operator()(const UniqueCol &col, std::vector<bool> active_rows) const {
             for (idx_t i : col) {
-                if (!active_rows[i]) { return false; }  // discard
+                if (!active_rows[i]) {
+                    return false;
+                }  // discard
             }
             return true;  // keep
         }
@@ -43,7 +45,9 @@ namespace sph {
     struct SetCov_ActiveColTest {
         bool operator()(const UniqueCol &col, std::vector<bool> active_rows) const {
             for (idx_t i : col) {
-                if (active_rows[i]) { return true; }  // keep
+                if (active_rows[i]) {
+                    return true;
+                }  // keep
             }
             return false;  // discard
         }
@@ -82,7 +86,9 @@ namespace sph {
         template <typename KeepColStrategy>
         void inline fix_columns(const std::vector<idx_t> &idxs) {
             for (idx_t j : idxs) {
-                for (idx_t i : cols[j]) { active_rows[i] = false; }
+                for (idx_t i : cols[j]) {
+                    active_rows[i] = false;
+                }
             }
 
             _fix_columns<KeepColStrategy>(idxs);
@@ -94,7 +100,9 @@ namespace sph {
             assert(active_rows.size() == nrows);
             assert(M_star.size() == nrows);
 
-            for (idx_t i = 0; i < nrows; ++i) { active_rows[i] = !M_star[i]; }
+            for (idx_t i = 0; i < nrows; ++i) {
+                active_rows[i] = !M_star[i];
+            }
             nactive_rows = M_star.get_uncovered();
 
             _fix_columns<KeepColStrategy>(idxs);
@@ -130,7 +138,9 @@ namespace sph {
 
             for (auto &new_col : new_cols) {
                 idx_t inserted_idx = add_column(new_col);
-                if (inserted_idx != NOT_AN_INDEX) { inserted_cols_idxs.emplace_back(inserted_idx); }
+                if (inserted_idx != NOT_AN_INDEX) {
+                    inserted_cols_idxs.emplace_back(inserted_idx);
+                }
             }
 
             return inserted_cols_idxs;
@@ -144,7 +154,9 @@ namespace sph {
 
             for (auto &new_col : new_cols) {
                 idx_t inserted_idx = add_column(std::move(new_col));
-                if (inserted_idx != NOT_AN_INDEX) { inserted_cols_idxs.emplace_back(inserted_idx); }
+                if (inserted_idx != NOT_AN_INDEX) {
+                    inserted_cols_idxs.emplace_back(inserted_idx);
+                }
             }
 
             return inserted_cols_idxs;
@@ -298,7 +310,9 @@ namespace sph {
                 }
 
                 if (!is_empty) {  // check for empty columns
-                    if (c_u < 0.0) { global_LB += c_u; }
+                    if (c_u < 0.0) {
+                        global_LB += c_u;
+                    }
 
                     _priced_cols[p_idx++] = {gj, c_u, col.get_solcost()};
                 }
@@ -311,7 +325,10 @@ namespace sph {
 
         template <unsigned long Min_cov = SUBINST_MIN_COV, unsigned long Hard_cap = SUBINST_HARD_CAP>
         void _select_C1_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs) {
-
+            if (nactive_rows == 0) {
+                return;
+            }
+            
             idx_t fivem = std::min<idx_t>(Hard_cap, std::min<idx_t>(Min_cov * nactive_rows, _priced_cols.size()));
             global_col_idxs.reserve(fivem);
 
@@ -320,7 +337,9 @@ namespace sph {
             for (idx_t n = 0; n < fivem; n++) {
                 assert(n < _priced_cols.size());
 
-                if (_priced_cols.is_selected(n) || _priced_cols[n].c_u >= 0.1) { continue; }
+                if (_priced_cols.is_selected(n) || _priced_cols[n].c_u >= 0.1) {
+                    continue;
+                }
 
                 idx_t gj = _priced_cols[n].j;
                 assert(gj < cols.size());
@@ -343,7 +362,9 @@ namespace sph {
             assert(std::is_sorted(_priced_cols.begin() + global_col_idxs.size(), _priced_cols.end(),
                                   [](const Priced_Col &c1, const Priced_Col &c2) { return c1.c_u < c2.c_u; }));
 
-            if (nactive_rows == 0) { }
+            if (nactive_rows == 0) {
+                return;
+            }
 
             idx_t min_cov = std::min<idx_t>(Min_cov, Hard_cap / nactive_rows);
             idx_t fivem = std::min<idx_t>(min_cov * nactive_rows, _priced_cols.size());
@@ -365,7 +386,9 @@ namespace sph {
 
                 Column &col = cols[_priced_cols[n].j];
                 for (idx_t gi : col) {
-                    if (_covering_times[gi] == 0) { continue; }
+                    if (_covering_times[gi] == 0) {
+                        continue;
+                    }
 
                     --_covering_times[gi];
 
@@ -394,6 +417,10 @@ namespace sph {
 
         template <unsigned long Min_cov = SUBINST_MIN_SOLCOST_COV, unsigned long Hard_cap = SUBINST_HARD_CAP>
         void _select_C3_cols(Priced_Columns &_priced_cols, std::vector<idx_t> &global_col_idxs) {
+            if (nactive_rows == 0) {
+                return;
+            }
+
             idx_t fivem = std::min<idx_t>(Hard_cap, std::min<idx_t>(Min_cov * nactive_rows, _priced_cols.size()));
             global_col_idxs.reserve(fivem);
 
@@ -403,12 +430,16 @@ namespace sph {
             auto min_e = std::min_element(_priced_cols.begin(), _priced_cols.begin() + fivem,
                                           [](const Priced_Col &c1, const Priced_Col &c2) { return c1.sol_cost < c2.sol_cost; });
 
-            if (min_e->sol_cost == REAL_MAX) { return; }
+            if (min_e->sol_cost == REAL_MAX) {
+                return;
+            }
 
             for (idx_t n = 0; n < fivem; ++n) {
                 assert(n < _priced_cols.size());
 
-                if (_priced_cols.is_selected(n) || _priced_cols[n].sol_cost == REAL_MAX) { continue; }
+                if (_priced_cols.is_selected(n) || _priced_cols[n].sol_cost == REAL_MAX) {
+                    continue;
+                }
 
                 idx_t gj = _priced_cols[n].j;
                 assert(gj < cols.size());
@@ -428,14 +459,18 @@ namespace sph {
         void _fix_columns(const std::vector<idx_t> &idxs) {
             idx_t iok = 0;
             for (idx_t j = 0; j < cols.size(); ++j) {
-                if (KeepColStrategy()(cols[j], active_rows)) { active_cols[iok++] = j; }
+                if (KeepColStrategy()(cols[j], active_rows)) {
+                    active_cols[iok++] = j;
+                }
             }
 
             active_cols.resize(iok);
             fixed_cols = idxs;
 
             fixed_cost = 0.0;
-            for (idx_t j : fixed_cols) { fixed_cost += cols[j].get_cost(); }
+            for (idx_t j : fixed_cols) {
+                fixed_cost += cols[j].get_cost();
+            }
         }
 
 
