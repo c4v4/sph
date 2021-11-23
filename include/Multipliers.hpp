@@ -35,13 +35,13 @@ namespace sph {
         GlobalMultipliers& operator=(const GlobalMultipliers& other) = default;
         GlobalMultipliers& operator=(GlobalMultipliers&& other) = default;
 
-        GlobalMultipliers(SubInstance& subinst, LocalMultipliers mult)
+        GlobalMultipliers(const SubInstance& subinst, const LocalMultipliers& mult)
             : std::vector<real_t>(subinst.get_instance().get_nrows(), 0.0), lb(REAL_LOWEST) {
             for (idx_t i = 0; i < mult.size(); ++i) { (*this)[subinst.get_global_row_idx(i)] = mult[i]; }
             update_lb(subinst.get_instance());
         }
 
-        inline void update_lb(Instance& inst) {
+        inline void update_lb(const Instance& inst) {
 
             real_t lb1 = inst.get_fixed_cost();
             real_t lb2 = 0.0;

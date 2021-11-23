@@ -42,11 +42,16 @@ namespace sph {
         [[nodiscard]] inline const Row &get_row(idx_t idx) const { return rows[idx]; }
 
         [[nodiscard]] inline std::vector<idx_t> &get_fixed_cols() { return fixed_cols_global_idxs; }
+        [[nodiscard]] inline const std::vector<idx_t> &get_fixed_cols() const { return fixed_cols_global_idxs; }
         [[nodiscard]] inline real_t get_fixed_cost() const { return fixed_cost; }
         [[nodiscard]] inline idx_t get_ncols_constr() const { return ncols_constr; }
         [[nodiscard]] inline Instance &get_instance() { return inst; }
+        [[nodiscard]] inline const Instance &get_instance() const { return inst; }
 
         [[nodiscard]] Timer &get_timelimit() { return inst.get_timelimit(); }
+        [[nodiscard]] const Timer &get_timelimit() const { return inst.get_timelimit(); }
+
+        inline void new_best_cb(GlobalSolution &sol) { inst.new_best_cb(sol); }
 
         [[nodiscard]] bool is_corrupted() const {
             idx_t j_counter = 0;
@@ -113,32 +118,38 @@ namespace sph {
                     }
                 }
 
-                if (c_u < 0.0) { global_LB += c_u; }
+                if (c_u < 0.0) {
+                    global_LB += c_u;
+                }
             }
 
             return global_LB;
         }
-        [[nodiscard]] idx_t find_local_col_idx(idx_t gj) {
+        [[nodiscard]] idx_t find_local_col_idx(idx_t gj) const {
 
             for (idx_t gi : inst.get_col(gj)) {
                 if (_is_global_row_active(gi)) {
                     idx_t active_li = global_to_local_row_idxs[gi];
                     for (idx_t lj : rows[active_li]) {
-                        if (local_to_global_col_idxs[lj] == gj) { return lj; }
+                        if (local_to_global_col_idxs[lj] == gj) {
+                            return lj;
+                        }
                     }
                     break;
                 }
             }
             return NOT_AN_INDEX;
         }
-        [[nodiscard]] std::vector<idx_t> get_localized_solution(const std::vector<idx_t> &glob_sol) {
+        [[nodiscard]] std::vector<idx_t> get_localized_solution(const std::vector<idx_t> &glob_sol) const {
             assert(glob_sol.size() >= fixed_cols_global_idxs.size());
 
             std::vector<idx_t> local_sol;
             local_sol.reserve(glob_sol.size() - fixed_cols_global_idxs.size() - inst.get_fixed_cols().size());
             for (idx_t gj : glob_sol) {
                 idx_t lj = find_local_col_idx(gj);
-                if (lj != NOT_AN_INDEX) { local_sol.emplace_back(lj); }
+                if (lj != NOT_AN_INDEX) {
+                    local_sol.emplace_back(lj);
+                }
             }
 
             SPH_DEBUG {
@@ -147,13 +158,18 @@ namespace sph {
                 for ([[maybe_unused]] idx_t lj : local_sol) {
                     assert(std::find(glob_sol.begin(), glob_sol.end(), local_to_global_col_idxs[lj]) != glob_sol.end());
                 }
-                for ([[maybe_unused]] idx_t gj : sifc) { assert(std::find(glob_sol.begin(), glob_sol.end(), gj) != glob_sol.end()); }
-                for ([[maybe_unused]] idx_t gj : ifc) { assert(std::find(glob_sol.begin(), glob_sol.end(), gj) != glob_sol.end()); }
+                for ([[maybe_unused]] idx_t gj : sifc) {
+                    assert(std::find(glob_sol.begin(), glob_sol.end(), gj) != glob_sol.end());
+                }
+                for ([[maybe_unused]] idx_t gj : ifc) {
+                    assert(std::find(glob_sol.begin(), glob_sol.end(), gj) != glob_sol.end());
+                }
                 for ([[maybe_unused]] idx_t gj : glob_sol) {
 
                     [[maybe_unused]] bool check1 = [&]() {
                         for (idx_t lj : local_sol)
-                            if (local_to_global_col_idxs[lj] == gj) return true;
+                            if (local_to_global_col_idxs[lj] == gj)
+                                return true;
                         return false;
                     }();
                     [[maybe_unused]] bool check2 = std::find(sifc.begin(), sifc.end(), gj) != sifc.end();
@@ -213,15 +229,21 @@ namespace sph {
 
             for (idx_t lj : local_sol) {
                 Column &gcol = inst.get_col(local_to_global_col_idxs[lj]);
-                if (gcol.get_solcost() > sol_cost) { gcol.set_solcost(sol_cost); }
+                if (gcol.get_solcost() > sol_cost) {
+                    gcol.set_solcost(sol_cost);
+                }
             }
 
             for (idx_t gj : fixed_cols_global_idxs) {
-                if (inst.get_col(gj).get_solcost() > sol_cost) { inst.get_col(gj).set_solcost(sol_cost); }
+                if (inst.get_col(gj).get_solcost() > sol_cost) {
+                    inst.get_col(gj).set_solcost(sol_cost);
+                }
             }
 
             for (idx_t gj : inst.get_fixed_cols()) {
-                if (inst.get_col(gj).get_solcost() > sol_cost) { inst.get_col(gj).set_solcost(sol_cost); }
+                if (inst.get_col(gj).get_solcost() > sol_cost) {
+                    inst.get_col(gj).set_solcost(sol_cost);
+                }
             }
         }
 
@@ -257,7 +279,9 @@ namespace sph {
         real_t price(const std::vector<real_t> &u_k) {
 
             global_u_k.assign(inst.get_nrows(), 0);
-            for (idx_t i = 0; i < u_k.size(); ++i) { global_u_k[local_to_global_row_idxs[i]] = u_k[i]; }
+            for (idx_t i = 0; i < u_k.size(); ++i) {
+                global_u_k[local_to_global_row_idxs[i]] = u_k[i];
+            }
 
             local_to_global_col_idxs.clear();
             real_t global_LB = inst.fill_with_best_columns(local_to_global_col_idxs, global_u_k);
@@ -267,9 +291,11 @@ namespace sph {
             return global_LB;
         }
 
-        idx_t fix_columns(std::vector<idx_t> &local_idxs_to_fix, std::vector<real_t> &u_star) {
+        idx_t fix_columns(const std::vector<idx_t> &local_idxs_to_fix, std::vector<real_t> &u_star) {
 
-            if (local_idxs_to_fix.empty()) { return rows.size(); }
+            if (local_idxs_to_fix.empty()) {
+                return rows.size();
+            }
 
             // mark rows to remove
             for (idx_t lj : local_idxs_to_fix) {
@@ -282,7 +308,9 @@ namespace sph {
                 fixed_cols_global_idxs.emplace_back(gj);
                 const auto &col = cols[lj];
                 for (idx_t li : col) {
-                    if (local_to_global_row_idxs[li] == NOT_AN_INDEX) { continue; }
+                    if (local_to_global_row_idxs[li] == NOT_AN_INDEX) {
+                        continue;
+                    }
 
                     idx_t gi = local_to_global_row_idxs[li];
                     local_to_global_row_idxs[li] = NOT_AN_INDEX;
@@ -291,17 +319,25 @@ namespace sph {
             }
 
             fixed_cost = inst.get_fixed_cost();
-            for (idx_t gj : fixed_cols_global_idxs) { fixed_cost += inst.get_col(gj).get_cost(); }
+            for (idx_t gj : fixed_cols_global_idxs) {
+                fixed_cost += inst.get_col(gj).get_cost();
+            }
 
-            if (inst.get_ncols_constr() > 0) { ncols_constr = inst.get_ncols_constr() - inst.get_fixed_cols().size(); }
+            if (inst.get_ncols_constr() > 0) {
+                ncols_constr = inst.get_ncols_constr() - inst.get_fixed_cols().size();
+            }
 
             // compact rows
             idx_t li = 0;
-            while (local_to_global_row_idxs[li] != NOT_AN_INDEX) { ++li; }
+            while (local_to_global_row_idxs[li] != NOT_AN_INDEX) {
+                ++li;
+            }
 
             idx_t rows_left = li;
             for (; li < rows.size(); ++li) {
-                if (local_to_global_row_idxs[li] == NOT_AN_INDEX) { continue; }
+                if (local_to_global_row_idxs[li] == NOT_AN_INDEX) {
+                    continue;
+                }
 
                 idx_t gi = local_to_global_row_idxs[li];
 
@@ -317,7 +353,9 @@ namespace sph {
             u_star.resize(rows_left);
 
             SPH_DEBUG {
-                for ([[maybe_unused]] idx_t gi : local_to_global_row_idxs) { assert(_is_global_row_active(gi)); }
+                for ([[maybe_unused]] idx_t gi : local_to_global_row_idxs) {
+                    assert(_is_global_row_active(gi));
+                }
             }
 
             if (rows_left == 0) {
@@ -328,7 +366,9 @@ namespace sph {
 
             idx_t lj = 0;
             for (idx_t gj : local_to_global_col_idxs) {
-                if (gj == NOT_AN_INDEX) { continue; }
+                if (gj == NOT_AN_INDEX) {
+                    continue;
+                }
 
                 for (auto gi : inst.get_col(gj)) {
                     if (_is_global_row_active(gi)) {
@@ -347,7 +387,9 @@ namespace sph {
             assert(!glob_cols_idxs.empty());
 
             rows.resize(local_to_global_row_idxs.size());
-            for (auto &row : rows) { row.clear(); }
+            for (auto &row : rows) {
+                row.clear();
+            }
 
             idx_t ncols = glob_cols_idxs.size();
 
@@ -377,7 +419,7 @@ namespace sph {
 
 
     private:
-        [[nodiscard]] inline bool _is_global_row_active(const idx_t gbl_idx) {
+        [[nodiscard]] inline bool _is_global_row_active(const idx_t gbl_idx) const {
             assert(gbl_idx < global_to_local_row_idxs.size());
             return global_to_local_row_idxs[gbl_idx] != NOT_AN_INDEX;
         }

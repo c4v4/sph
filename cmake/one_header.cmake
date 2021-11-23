@@ -1,5 +1,6 @@
 function(one_header_only)
     set(SHPHEADERS  include/cft.hpp
+                    include/ForwardIterator.hpp
                     include/CollectionOf.hpp
                     include/MStar.hpp
                     include/Stopwatch.hpp

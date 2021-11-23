@@ -51,8 +51,53 @@ namespace sph {
          *          each original column index to the index inside Instance.
          */
         template <typename UniqueColContainer>
-        std::vector<idx_t> inline add_columns(const UniqueColContainer &new_cols) {
+        inline std::vector<idx_t> add_columns(const UniqueColContainer &new_cols) {
             return inst.add_columns(new_cols);
+        }
+
+        /**
+         * @brief Adds a complete solution in the pool, and store the columns indexes as
+         * warm start if it is the best solution so far.
+         *
+         * @tparam UniqueColContainer Container type.
+         * @param new_cols New columns container.
+         * @return std::vector<idx_t> Vector of length costs.size(), mapping
+         *          each original column index to the index inside Instance.
+         */
+        inline const std::vector<idx_t> &add_solution(const std::vector<real_t> &costs, const std::vector<idx_t> &matbeg,
+                                                      const std::vector<idx_t> &matval) {
+            real_t sol_cost = std::reduce(costs.begin(), costs.end());
+            std::vector<real_t> sol_costs(costs.size(), sol_cost);
+            GlobalSolution candidate(inst.add_columns(costs, sol_costs, matbeg, matval), sol_cost);
+            if (sol_cost < warmstart.get_cost()) {
+                warmstart = std::move(candidate);
+            }
+            return warmstart;
+        }
+
+        /**
+         * @brief Adds a complete solution in the pool, and store the columns indexes as
+         * warm start if it is the best solution so far.
+         *
+         * @tparam UniqueColContainer Container type.
+         * @param new_cols New columns container.
+         * @return std::vector<idx_t> Vector of length costs.size(), mapping
+         *          each original column index to the index inside Instance.
+         */
+        template <typename UniqueColContainer>
+        inline const std::vector<idx_t> &add_solution(const std::vector<real_t> &costs, const UniqueColContainer &new_cols_rows) {
+
+            real_t sol_cost = std::reduce(costs.begin(), costs.end());
+            auto cost_it = costs.begin();
+            std::vector<UniqueCol> new_cols;
+            for (auto &col : new_cols_rows) {
+                new_cols.emplace_back(col.begin(), col.end(), *cost_it++, sol_cost);
+            }
+            GlobalSolution candidate(inst.add_columns(std::move(new_cols)), sol_cost);
+            if (sol_cost < warmstart.get_cost()) {
+                warmstart = std::move(candidate);
+            }
+            return warmstart;
         }
 
         /**
@@ -70,7 +115,7 @@ namespace sph {
          * @return std::vector<idx_t> Vector of length costs.size(), mapping
          *          each original column index to the index inside Instance.
          */
-        std::vector<idx_t> inline add_columns(const std::vector<real_t> &costs, const std::vector<real_t> &sol_costs,
+        inline std::vector<idx_t> add_columns(const std::vector<real_t> &costs, const std::vector<real_t> &sol_costs,
                                               const std::vector<idx_t> &matbeg, const std::vector<idx_t> &matval) {
             return inst.add_columns(costs, sol_costs, matbeg, matval);
         }
@@ -101,38 +146,70 @@ namespace sph {
          * @brief Call the sph main heuristic algorithm which tries to find the best
          * solution it can in the timelimit set.
          *
-         * @tparam ROUTES_HARD_CAP Maximum instance size. After the first iteration is
-         *          done, the lagrangian multiplier are used to filter out bad columns.
-         *          Three differnt criteria are used, for each one ROUTES_HARD_CAP set
-         *          the maximum amount of columns to select. Thus, in the worst case
-         *          scenario, 3 * ROUTES_HARD_CAP are selected. Usually, only
-         *          ~1.1 * ROUTES_HARD_CAP are selected, since the 3 criteria overlap.
-         *
-         * @tparam KeepColStrategy Choose betwee two fixing options:
-         *          1. SetPar_ActiveColTest: when an active column is fixed, all the
-         *              other active columns which overlap with at least one row, are
-         *              removed from the subinstace.
-         *          2. SetCov_ActiveColTest: when fixing a set of active columns,
-         *              only the ones that have at least one active row are maintained.
-         *              (to avoid empty columns inside the subinstance)
-         *
          * @param S_init Initial solution for the algorithm.
          *
          * @return std::vector<idx_t> Best solution found.
          */
-        template <unsigned long ROUTES_HARD_CAP = INST_HARD_CAP, typename KeepColStrategy = SetPar_ActiveColTest>
-        std::vector<idx_t> inline solve([[maybe_unused]] const std::vector<idx_t> &S_init) {
+        inline const GlobalSolution &solve(const std::vector<idx_t> &S_init) {
+            real_t S_init_cost = 0.0;
+            if (!S_init.empty()) {
+                S_init_cost = 0.0;
+                for (idx_t j : S_init)
+                    S_init_cost += inst.get_col(j).get_cost();
+            }
+            if (S_init_cost < warmstart.get_cost()) {
+                warmstart = GlobalSolution(S_init, S_init_cost);
+            }
+            return solve();
+        }
+
+        /**
+         * @brief See "inline std::vector<idx_t> solve(const std::vector<idx_t> &S_init)"
+         *
+         * @return std::vector<idx_t>
+         */
+        inline const GlobalSolution &solve() {
             SPH_VERBOSE(0) { fmt::print(" Set Partitioning Heuristic: \n"); }
             SPH_DEBUG { fmt::print(" Warning: running in debug mode\n"); }
             SPH_VERBOSE(0) { fmt::print(" SP Instance size: {}x{}\n", inst.get_nrows(), inst.get_ncols()); }
-
-            return refinement.solve<ROUTES_HARD_CAP, KeepColStrategy>(S_init);
+            warmstart = refinement.solve(warmstart);
+            return warmstart;
         }
+
+        /**
+         * @brief Maximum instance size. After the first iteration is
+         *        done, the lagrangian multiplier are used to filter out bad columns.
+         *        Three differnt criteria are used, for each one <max_routes> set
+         *        the maximum amount of columns to select. Thus, in the worst case
+         *        scenario, 3 * <max_routes> are selected. Usually, only
+         *        ~1.1 * <max_routes> are selected, since the 3 criteria overlap.
+         *
+         * @param max_routes
+         * @return * void
+         */
+        void set_max_routes(idx_t max_routes) { inst.set_max_routes(max_routes); }
+
+        /**
+         * @brief KeepStrat: Choose betwee two fixing options:
+         *       1. SPP: when an active column is fixed, all the
+         *           other active columns which overlap with at least one row, are
+         *           removed from the subinstace.
+         *       2. SCP: when fixing a set of active columns,
+         *           only the ones that have at least one active row are maintained.
+         *           (to avoid empty columns inside the subinstance)
+         *
+         * @param strat
+         */
+        void set_keepcol_strategy(KeepStrat strat) { inst.set_keepcol_strategy(strat); }
+
+        inline void set_new_best_callback(NewBestCallback cb) { inst.set_new_best_callback(cb); }
+
 
     private:
         Instance inst;
         std::mt19937 rnd;
         Refinement refinement;
+        GlobalSolution warmstart;
     };
 
 }  // namespace sph

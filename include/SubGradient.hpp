@@ -49,7 +49,7 @@ namespace sph {
             return u_0;
         }
 
-        LocalMultipliers solve(real_t UB, const LocalMultipliers& u_0, Timer& time_limit) {
+        LocalMultipliers solve(real_t UB, const LocalMultipliers& u_0, const Timer& time_limit) {
             size_t max_iter = 10 * subinst.get_rows().size();
             idx_t nrows = subinst.get_rows().size();
 

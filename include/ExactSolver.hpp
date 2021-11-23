@@ -42,7 +42,7 @@ namespace sph {
 
         ~ExactSolver() { CPXcloseCPLEX(&env); }
 
-        LocalSolution build_and_opt(SubInstance& subinst, LocalSolution& warmstart, Timer& time_limit) {
+        LocalSolution build_and_opt(const SubInstance& subinst, const LocalSolution& warmstart, const Timer& time_limit) {
             if (subinst.get_ncols() == 0 || subinst.get_nrows() == 0) {
                 return LocalSolution();
             }
@@ -107,7 +107,7 @@ namespace sph {
         ////////// PRIVATE METHODS //////////
 
     private:
-        int build_model(SubInstance& subinst) {
+        int build_model(const SubInstance& subinst) {
             int res;
 
             if ((res = CPXchgobjoffset(env, lp, subinst.get_fixed_cost()))) {
@@ -134,8 +134,8 @@ namespace sph {
             return 0;
         }
 
-        int add_variables(SubInstance& subinst) {
-            SubInstCols& cols = subinst.get_cols();
+        int add_variables(const SubInstance& subinst) {
+            const SubInstCols& cols = subinst.get_cols();
             idx_t ncols = subinst.get_ncols();
 
             ASSIGN_UP(ctype, ncols, 'B');
@@ -148,8 +148,8 @@ namespace sph {
             return CPXnewcols(env, lp, ncols, dbl_vals.data(), lb.data(), ones.data(), ctype.data(), nullptr);
         }
 
-        int add_cov_constraints(SubInstance& subinst) {
-            std::vector<Row>& rows = subinst.get_rows();
+        int add_cov_constraints(const SubInstance& subinst) {
+            const std::vector<Row>& rows = subinst.get_rows();
             idx_t nrows = subinst.get_nrows();
 
             RESIZE_UP(rmatbeg, nrows);
@@ -170,7 +170,7 @@ namespace sph {
                               nullptr);
         }
 
-        int add_maxcols_constraint(SubInstance& subinst, double col_num_constr) {
+        int add_maxcols_constraint(const SubInstance& subinst, double col_num_constr) {
             idx_t ncols = subinst.get_ncols();
 
             int beg = 0;
@@ -183,7 +183,7 @@ namespace sph {
         }
 
 
-        int set_warmstart(LocalSolution& warmstart) {
+        int set_warmstart(const LocalSolution& warmstart) {
             idx_t wsize = warmstart.size();
             if (wsize > 0) {
 
@@ -239,5 +239,10 @@ namespace sph {
     };
 
 }  // namespace sph
+
+#undef RESIZE_UP
+#undef ASSIGN_UP
+#undef SET_INT
+#undef SET_DBL
 
 #endif

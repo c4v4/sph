@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(WARNING_FLAGS "-Wall -Wextra -Wpedantic -Wuninitialized -Wshadow ") # -Werror
 set(SANITIZERS_FLAGS "-fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope -fsanitize=undefined")
 #set(OPT_FLAGS "-O3 -march=native -ffat-lto-objects -flto -g -fno-omit-frame-pointer")
-set(OPT_FLAGS "-O3 -march=native -flto -fno-exceptions")
+set(OPT_FLAGS "-O3 -march=native -mtune=native -flto -fno-exceptions")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARNING_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${SANITIZERS_FLAGS}")

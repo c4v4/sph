@@ -24,17 +24,15 @@ namespace sph {
         Refinement(Instance& inst_, std::mt19937& rnd_) : inst(inst_), subinst(inst_), two_phase(subinst), rnd(rnd_) { }
 
         // S_init must be a global complete solution
-        template <unsigned long ROUTES_HARD_CAP, typename KeepColStrategy = SetPar_ActiveColTest>
         GlobalSolution solve([[maybe_unused]] const std::vector<idx_t>& S_init) {
 
             SPH_VERBOSE(1) {
-                if constexpr (std::is_same_v<KeepColStrategy, SetPar_ActiveColTest>) {
+                if (inst.get_keepcol_strategy() == SPP)
                     fmt::print("  Using Set Partitioning fixing strategy (overlaps are forbidden).\n");
-                } else if (std::is_same_v<KeepColStrategy, SetCov_ActiveColTest>) {
+                else if (inst.get_keepcol_strategy() == SCP)
                     fmt::print("  Using Set Covering fixing strategy (overlaps are alowed).\n");
-                } else {
-                    fmt::print(stderr, "  Warning: Using unkown fixing strategy.\n");
-                }
+                else
+                    fmt::print(stderr, "  Warning: Fixing strategy not valid, falling back to Set Covering.\n");
             }
 
             inst.reset_fixing();
@@ -79,11 +77,15 @@ namespace sph {
 
                     assert(!(std::fabs(pi - PI_MIN) > 0.001 && inst.get_fixed_cols().empty()));
                     pi *= ALPHA;  // 6.
-
-                    if (S.get_cost() < S_star.get_cost()) {  // update best solution
-                        S_star = std::move(S);               // 5.
-                        last_improving_pi = pi;
-                        pi = std::max(pi / (ALPHA * ALPHA), PI_MIN);  // 6.
+                    
+                    if (!S.empty()) {
+                        inst.update_sol_costs(S, S.get_cost());
+                        if (S_star.get_cost() - S.get_cost() > EPSILON) {  // update best solution
+                            inst.new_best_cb(S);
+                            S_star = std::move(S);  // 5.
+                            last_improving_pi = pi;
+                            pi = std::max(pi / (ALPHA * ALPHA), PI_MIN);  // 6.
+                        }
                     }
 
                     if (S_star.get_cost() - 1.0 <= BETA * u_star.get_lb() || pi > PI_MAX || inst.get_active_rows_size() <= 0) {
@@ -110,7 +112,7 @@ namespace sph {
 
                 if (iter == 1) {
                     u_star = two_phase.get_global_u();
-                    std::vector<idx_t> old_to_new_idx_map = inst.prune_instance<ROUTES_HARD_CAP>(u_star);
+                    std::vector<idx_t> old_to_new_idx_map = inst.prune_instance(u_star);
 
                     SPH_VERBOSE(1) { fmt::print("  Instance size: {}x{}\n", inst.get_nrows(), inst.get_ncols()); }
 
@@ -141,7 +143,7 @@ namespace sph {
                 assert(cols_to_fix.size() <= S_star.size());
 
                 std::sort(cols_to_fix.begin(), cols_to_fix.end());
-                inst.fix_columns<KeepColStrategy>(cols_to_fix, covered_rows);
+                inst.fix_columns(cols_to_fix, covered_rows);
 
                 SPH_VERBOSE(2) {
                     fmt::print("   ╔═ REFINEMENT: iter {:3} ══════════════════════════════════════════════════\n", iter);
@@ -299,5 +301,7 @@ namespace sph {
     };
 
 }  // namespace sph
+
+#undef LONG_T_LIM
 
 #endif

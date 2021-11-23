@@ -6,6 +6,7 @@
 #include <cassert>
 #include <numeric>
 
+#include "ForwardIterator.hpp"
 #include "cft.hpp"
 #include "fmt/core.h"
 
@@ -20,7 +21,9 @@ namespace sph {
     static Ptr* align_ptr(Ptr* src) {
 
         size_t alignment = reinterpret_cast<uintptr_t>(reinterpret_cast<const void*>(src)) % alignof(Elem);
-        if (alignment > 0) { src += alignof(Elem) - alignment; }
+        if (alignment > 0) {
+            src += alignof(Elem) - alignment;
+        }
         return src;
     }
 
@@ -59,7 +62,7 @@ namespace sph {
         idx_t sz;
     };
 
-    class SubInstCol : public CollectionOfElem<SubInstCol> {
+    class SubInstCol final : public CollectionOfElem<SubInstCol> {
         friend class CollectionOf<SubInstCol>;
 
     protected:
@@ -107,46 +110,33 @@ namespace sph {
 
     template <typename Elem>
     class CollectionOf {
-    public:
-        class CollectionIter {
-        public:
-            CollectionIter(Elem* base_) : base(reinterpret_cast<Elem*>(align_ptr<Elem>(reinterpret_cast<char*>(base_)))) {
-                assert(reinterpret_cast<uintptr_t>(reinterpret_cast<const void*>(base)) % alignof(Elem) == 0);
-            }
-
-            [[nodiscard]] inline auto& operator*() { return *base; }
-
-            inline auto& operator++() {
-                base = reinterpret_cast<Elem*>(
+    private:
+        struct inc {
+            constexpr Elem* operator()(Elem* base) const {
+                return reinterpret_cast<Elem*>(
                     align_ptr<Elem>(reinterpret_cast<char*>(base) + sizeof(Elem) + base->size() * sizeof(idx_t)));
-                assert(align_ptr<Elem>(base) == base);
-                return *this;
             }
-
-            inline auto operator++(int) {
-                Elem* old_base = base;
-                base = reinterpret_cast<Elem*>(
-                    align_ptr<Elem>(reinterpret_cast<char*>(base) + sizeof(Elem) + base->size() * sizeof(idx_t)));
-                assert(align_ptr<Elem>(base) == base);
-                return CollectionIter(old_base);
-            }
-
-            [[nodiscard]] inline bool operator!=(CollectionIter& it2) const { return base != it2.base; }
-
-            [[nodiscard]] inline bool operator==(CollectionIter& it2) const { return base == it2.base; }
-
-            [[nodiscard]] Elem* data() const { return base; }
-
-        private:
-            Elem* base;
         };
 
+        struct defer {
+            constexpr Elem& operator()(Elem* t) const { return *t; }
+        };
+
+        using _base_iter = cav::ForwardIterator<Elem*, inc, defer>;
+
+    public:
+        struct CollectionIter : public _base_iter {
+            CollectionIter(Elem* base_) : _base_iter(reinterpret_cast<Elem*>(align_ptr<Elem>(reinterpret_cast<char*>(base_)))) { }
+        };
 
     public:
         CollectionOf(idx_t allocated_elem = 100) {
             buffer_allocate(allocated_elem * (sizeof(Elem) + sizeof(idx_t) * 10));
             offsets.reserve(allocated_elem);
         }
+
+        CollectionOf(const CollectionOf&) = delete;
+        CollectionOf& operator=(const CollectionOf&) = delete;
 
         ~CollectionOf() {
             free(start);
@@ -175,7 +165,9 @@ namespace sph {
 
         inline void reserve(idx_t new_ncols) {
             idx_t ncols = offsets.size();
-            if (new_ncols <= ncols) { return; }
+            if (new_ncols <= ncols) {
+                return;
+            }
 
             double avg_col_size = ncols > 0 ? static_cast<double>(finish - start) / static_cast<double>(ncols) : 10.0;
 
@@ -277,38 +269,57 @@ namespace sph {
             assert(start && finish && end_of_storage);
         }
 
-//#define CHECK_RET is_corrupted_printed()
-#define CHECK_RET true
-
+#define CHECK_RET true  // is_corrupted_printed()
         bool is_corrupted() {
 
-            if (align_ptr<Elem>(begin().data()) != begin().data()) { return CHECK_RET; }
-            if (!empty() && align_ptr<Elem>(begin().data()) != reinterpret_cast<Elem*>(start + offsets[0])) { return CHECK_RET; }
-            if (align_ptr<Elem>(end().data()) != end().data()) { return CHECK_RET; }
+            if (align_ptr<Elem>(begin().data()) != begin().data()) {
+                return CHECK_RET;
+            }
+            if (!empty() && align_ptr<Elem>(begin().data()) != reinterpret_cast<Elem*>(start + offsets[0])) {
+                return CHECK_RET;
+            }
+            if (align_ptr<Elem>(end().data()) != end().data()) {
+                return CHECK_RET;
+            }
 
             idx_t counter = 0;
             for (Elem& elem : *this) {
-                if (align_ptr<Elem>(std::addressof(elem)) != std::addressof(elem)) { return CHECK_RET; }
-                if (++counter > size()) { return CHECK_RET; }
+                if (align_ptr<Elem>(std::addressof(elem)) != std::addressof(elem)) {
+                    return CHECK_RET;
+                }
+                if (++counter > size()) {
+                    return CHECK_RET;
+                }
             }
             return false;
         }
+#undef CHECK_RET
 
         bool is_corrupted_printed() {
 
             fmt::print("begin {} {}\n", (void*)begin().data(), (void*)align_ptr<Elem>(begin().data()));
-            if (align_ptr<Elem>(begin().data()) != begin().data()) { return true; }
+            if (align_ptr<Elem>(begin().data()) != begin().data()) {
+                return true;
+            }
 
-            if (!empty()) { fmt::print("offset begin {} {}\n", (void*)begin().data(), (void*)(start + offsets[0])); }
-            if (!empty() && align_ptr<Elem>(begin().data()) != reinterpret_cast<Elem*>(start + offsets[0])) { return true; }
+            if (!empty()) {
+                fmt::print("offset begin {} {}\n", (void*)begin().data(), (void*)(start + offsets[0]));
+            }
+            if (!empty() && align_ptr<Elem>(begin().data()) != reinterpret_cast<Elem*>(start + offsets[0])) {
+                return true;
+            }
 
             fmt::print("end {} {}\n", (void*)end().data(), (void*)align_ptr<Elem>(end().data()));
-            if (align_ptr<Elem>(end().data()) != end().data()) { return true; }
+            if (align_ptr<Elem>(end().data()) != end().data()) {
+                return true;
+            }
 
             idx_t counter = 0;
             for (Elem& elem : *this) {
                 fmt::print("{} ", (void*)std::addressof(elem));
-                if (align_ptr<Elem>(std::addressof(elem)) != std::addressof(elem)) { return true; }
+                if (align_ptr<Elem>(std::addressof(elem)) != std::addressof(elem)) {
+                    return true;
+                }
                 if (++counter > size()) {
                     fmt::print("\n");
                     return true;

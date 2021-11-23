@@ -16,42 +16,7 @@ namespace sph {
     constexpr unsigned SUBINST_MIN_COV = 4U;
     constexpr unsigned SUBINST_MIN_SOLCOST_COV = 4U;
     constexpr unsigned SUBINST_HARD_CAP = 15'000U;
-
-    /**
-     * @brief
-     * Tell "Instance::fix_columns" what to do when a column contains a
-     * row covered by another fixed column.
-     * Set Partitioning: keep only columns that cover uncovered rows.
-     *
-     */
-    struct SetPar_ActiveColTest {
-        bool operator()(const UniqueCol &col, std::vector<bool> active_rows) const {
-            for (idx_t i : col) {
-                if (!active_rows[i]) {
-                    return false;
-                }  // discard
-            }
-            return true;  // keep
-        }
-    };
-
-    /**
-     * @brief
-     * Tell "Instance::fix_columns" what to do when a column contains a
-     * row covered by another fixed column.
-     * Set Covering: keep all the columns that contain an uncovered row.
-     *
-     */
-    struct SetCov_ActiveColTest {
-        bool operator()(const UniqueCol &col, std::vector<bool> active_rows) const {
-            for (idx_t i : col) {
-                if (active_rows[i]) {
-                    return true;
-                }  // keep
-            }
-            return false;  // discard
-        }
-    };
+    constexpr unsigned INST_HARD_CAP = 500'000U;
 
     /**
      * @brief Represents a complete instance of a Set Partitioning problem.
@@ -67,34 +32,58 @@ namespace sph {
         [[nodiscard]] inline idx_t get_active_rows_size() const { return nactive_rows; }
 
         [[nodiscard]] inline std::vector<idx_t> &get_active_cols() { return active_cols; }
+        [[nodiscard]] inline const std::vector<idx_t> &get_active_cols() const { return active_cols; }
         [[nodiscard]] inline std::vector<idx_t> &get_fixed_cols() { return fixed_cols; }
+        [[nodiscard]] inline const std::vector<idx_t> &get_fixed_cols() const { return fixed_cols; }
         [[nodiscard]] inline UniqueColSet &get_cols() { return cols; }
+        [[nodiscard]] inline const UniqueColSet &get_cols() const { return cols; }
         [[nodiscard]] inline Column &get_col(idx_t idx) { return cols[idx]; }
         [[nodiscard]] inline const Column &get_col(idx_t idx) const { return cols[idx]; }
         [[nodiscard]] inline real_t get_fixed_cost() const { return fixed_cost; }
-        [[nodiscard]] inline idx_t get_ncols_constr() const { return std::max<idx_t>(0, ncols_constr - fixed_cols.size()); }
+        [[nodiscard]] inline idx_t get_ncols_constr() const {
+            return ncols_constr > fixed_cols.size() ? ncols_constr - fixed_cols.size() : 0;
+        }
+        [[nodiscard]] inline KeepStrat get_keepcol_strategy() { return keep_col_strat; }
         inline void set_ncols_constr(idx_t ncols_constr_) { ncols_constr = ncols_constr_; }
-
+        inline void set_max_routes(idx_t inst_max_routes_) { inst_max_routes = inst_max_routes_; }
+        inline void set_keepcol_strategy(KeepStrat keep_col_strat_) { keep_col_strat = keep_col_strat_; }
         inline void set_timelimit(double seconds) { timelimit = Timer(seconds); }
         [[nodiscard]] inline Timer &get_timelimit() { return timelimit; }
 
-        [[nodiscard]] inline bool is_row_active(idx_t gi) {
+        [[nodiscard]] inline bool is_row_active(idx_t gi) const {
             assert(gi < nrows);
             return active_rows[gi];
         }
 
-        template <typename KeepColStrategy>
+        inline void set_new_best_callback(NewBestCallback cb) { new_best_callback = cb; }
+
+        inline void new_best_cb(GlobalSolution &sol) {
+            if (new_best_callback)
+                new_best_callback(*this, sol);
+        }
+
         void inline fix_columns(const std::vector<idx_t> &idxs) {
             for (idx_t j : idxs) {
                 for (idx_t i : cols[j]) {
                     active_rows[i] = false;
                 }
             }
-
-            _fix_columns<KeepColStrategy>(idxs);
+            _fix_columns(idxs);
         }
 
-        template <typename KeepColStrategy>
+        void update_sol_costs(const std::vector<idx_t> sol_cols, real_t sol_cost) {
+            for (idx_t gj : sol_cols) {
+                if (cols[gj].get_solcost() > sol_cost) {
+                    cols[gj].set_solcost(sol_cost);
+                }
+            }
+            for (idx_t gj : fixed_cols) {
+                if (cols[gj].get_solcost() > sol_cost) {
+                    cols[gj].set_solcost(sol_cost);
+                }
+            }
+        }
+
         void fix_columns(const std::vector<idx_t> &idxs, const MStar &M_star) {
             assert(fixed_cols.empty());
             assert(active_rows.size() == nrows);
@@ -105,7 +94,7 @@ namespace sph {
             }
             nactive_rows = M_star.get_uncovered();
 
-            _fix_columns<KeepColStrategy>(idxs);
+            _fix_columns(idxs);
         }
 
 
@@ -190,8 +179,8 @@ namespace sph {
             covering_times.reset_uncovered(nrows);
             std::sort(priced_cols.begin(), priced_cols.end(), [](const Priced_Col &c1, const Priced_Col &c2) { return c1.c_u < c2.c_u; });
 
-            _select_C2_cols(priced_cols, covering_times, global_idxs);
-            _select_C3_cols(priced_cols, global_idxs);
+            _select_C2_cols(priced_cols, covering_times, global_idxs, SUBINST_MIN_COV, SUBINST_HARD_CAP);
+            _select_C3_cols(priced_cols, global_idxs, SUBINST_MIN_SOLCOST_COV, SUBINST_HARD_CAP);
         }
 
         real_t fill_with_best_columns(std::vector<idx_t> &global_idxs, const std::vector<real_t> &u_k) {
@@ -201,9 +190,9 @@ namespace sph {
             covering_times.reset_uncovered(nrows);  // reset convered_rows to consider only reduced costs covering for C2
             std::sort(priced_cols.begin(), priced_cols.end(), [](const Priced_Col &c1, const Priced_Col &c2) { return c1.c_u < c2.c_u; });
 
-            _select_C1_cols(priced_cols, covering_times, global_idxs);
-            _select_C2_cols(priced_cols, covering_times, global_idxs);
-            _select_C3_cols(priced_cols, global_idxs);
+            _select_C1_cols(priced_cols, covering_times, global_idxs, SUBINST_MIN_COV, SUBINST_HARD_CAP);
+            _select_C2_cols(priced_cols, covering_times, global_idxs, SUBINST_MIN_COV, SUBINST_HARD_CAP);
+            _select_C3_cols(priced_cols, global_idxs, SUBINST_MIN_SOLCOST_COV, SUBINST_HARD_CAP);
 
             return global_LB;
         }
@@ -216,18 +205,17 @@ namespace sph {
          * @return std::vector<idx_t> map from old indexes to new ones to translate pre-existing solutions.
          *          NOT_AN_INDEX if the column has been removed.
          */
-        template <unsigned long Hard_cap>
         std::vector<idx_t> prune_instance(const std::vector<real_t> &u_k) {
-            if (cols.size() > 3 * Hard_cap) {
+            if (cols.size() > 3 * inst_max_routes) {
                 std::vector<idx_t> idxs_to_keep;
-                idxs_to_keep.reserve(Hard_cap);
+                idxs_to_keep.reserve(inst_max_routes);
 
                 _price_active_cols(u_k, priced_cols);
                 covering_times.reset_uncovered(nrows);  // reset convered_rows to consider only reduced costs covering for C2
 
-                _select_C1_cols<MAX_INDEX, Hard_cap>(priced_cols, covering_times, idxs_to_keep);
-                _select_C2_cols<MAX_INDEX, Hard_cap>(priced_cols, covering_times, idxs_to_keep);
-                _select_C3_cols<MAX_INDEX, Hard_cap>(priced_cols, idxs_to_keep);
+                _select_C1_cols(priced_cols, covering_times, idxs_to_keep, MAX_INDEX, inst_max_routes);
+                _select_C2_cols(priced_cols, covering_times, idxs_to_keep, MAX_INDEX, inst_max_routes);
+                _select_C3_cols(priced_cols, idxs_to_keep, MAX_INDEX, inst_max_routes);
 
                 UniqueColSet new_cols;
                 new_cols.reserve(idxs_to_keep.size());
@@ -323,12 +311,12 @@ namespace sph {
             return global_LB;
         }
 
-        template <unsigned long Min_cov = SUBINST_MIN_COV, unsigned long Hard_cap = SUBINST_HARD_CAP>
-        void _select_C1_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs) {
+        void _select_C1_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs, idx_t Min_cov,
+                             idx_t Hard_cap) {
             if (nactive_rows == 0) {
                 return;
             }
-            
+
             idx_t fivem = std::min<idx_t>(Hard_cap, std::min<idx_t>(Min_cov * nactive_rows, _priced_cols.size()));
             global_col_idxs.reserve(fivem);
 
@@ -356,8 +344,8 @@ namespace sph {
             }
         }
 
-        template <unsigned long Min_cov = SUBINST_MIN_COV, unsigned long Hard_cap = SUBINST_HARD_CAP>
-        void _select_C2_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs) {
+        void _select_C2_cols(Priced_Columns &_priced_cols, MStar &_covering_times, std::vector<idx_t> &global_col_idxs, idx_t Min_cov,
+                             idx_t Hard_cap) {
 
             assert(std::is_sorted(_priced_cols.begin() + global_col_idxs.size(), _priced_cols.end(),
                                   [](const Priced_Col &c1, const Priced_Col &c2) { return c1.c_u < c2.c_u; }));
@@ -415,8 +403,7 @@ namespace sph {
             }
         }
 
-        template <unsigned long Min_cov = SUBINST_MIN_SOLCOST_COV, unsigned long Hard_cap = SUBINST_HARD_CAP>
-        void _select_C3_cols(Priced_Columns &_priced_cols, std::vector<idx_t> &global_col_idxs) {
+        void _select_C3_cols(Priced_Columns &_priced_cols, std::vector<idx_t> &global_col_idxs, idx_t Min_cov, idx_t Hard_cap) {
             if (nactive_rows == 0) {
                 return;
             }
@@ -455,11 +442,49 @@ namespace sph {
             }
         }
 
-        template <typename KeepColStrategy>
+        /**
+         * @brief
+         * Tell "Instance::fix_columns" what to do when a column contains a
+         * row covered by another fixed column.
+         * Set Partitioning: keep only columns that cover uncovered rows.
+         *
+         */
+        [[nodiscard]] bool SetPar_ActiveColTest(const UniqueCol &col, const std::vector<bool> &active_rows_) {
+            for (idx_t i : col) {
+                if (!active_rows_[i]) {
+                    return false;
+                }  // discard
+            }
+            return true;  // keep
+        }
+
+        /**
+         * @brief
+         * Tell "Instance::fix_columns" what to do when a column contains a
+         * row covered by another fixed column.
+         * Set Covering: keep all the columns that contain an uncovered row.
+         *
+         */
+        [[nodiscard]] bool SetCov_ActiveColTest(const UniqueCol &col, const std::vector<bool> &active_rows_) {
+            for (idx_t i : col) {
+                if (active_rows_[i]) {
+                    return true;
+                }  // keep
+            }
+            return true;  // discard
+        }
+
+        inline auto keepColStrategy(Column &col, std::vector<bool> &active_rows_) {
+            if (keep_col_strat == SPP)
+                return SetPar_ActiveColTest(col, active_rows_);
+            else
+                return SetCov_ActiveColTest(col, active_rows_);
+        };
+
         void _fix_columns(const std::vector<idx_t> &idxs) {
             idx_t iok = 0;
             for (idx_t j = 0; j < cols.size(); ++j) {
-                if (KeepColStrategy()(cols[j], active_rows)) {
+                if (keepColStrategy(cols[j], active_rows)) {
                     active_cols[iok++] = j;
                 }
             }
@@ -485,10 +510,11 @@ namespace sph {
         idx_t ncols_constr;
         Priced_Columns priced_cols;
         MStar covering_times;
-
+        idx_t inst_max_routes = INST_HARD_CAP;
+        KeepStrat keep_col_strat = SPP;
+        NewBestCallback new_best_callback;
         Timer timelimit;
     };
-
 }  // namespace sph
 
 #endif

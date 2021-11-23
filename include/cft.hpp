@@ -9,19 +9,19 @@
  * VERBOSE_LEVEL [0-3]: Define how many prints: 0 few (default); 1 some; 2 a lot; 3 all
  */
 #ifdef VERBOSE
-    #ifndef VERBOSE_LEVEL
-        #define VERBOSE_LEVEL 0
-    #endif   
+#ifndef VERBOSE_LEVEL
+#define VERBOSE_LEVEL 0
+#endif
 
-    #define SPH_VERBOSE(A) if constexpr (VERBOSE_LEVEL >= A)
+#define SPH_VERBOSE(A) if constexpr (VERBOSE_LEVEL >= A)
 #else
-    #define SPH_VERBOSE(A) if constexpr (false)
+#define SPH_VERBOSE(A) if constexpr (false)
 #endif
 
 #ifdef NDEBUG
 #define SPH_DEBUG if constexpr (false)
 #else
-    #define SPH_DEBUG
+#define SPH_DEBUG
 #endif
 
 namespace sph {
@@ -35,10 +35,14 @@ namespace sph {
     constexpr idx_t NOT_AN_INDEX = std::numeric_limits<sph::idx_t>::max();
     constexpr idx_t MAX_INDEX = std::numeric_limits<sph::idx_t>::max();
     constexpr real_t HAS_INTEGRAL_COSTS = 1.0;  // 1.0 if yes , 0.0 if no
+    constexpr real_t EPSILON = 1E-6;
 
-#ifndef INST_HARD_CAP
-    constexpr unsigned INST_HARD_CAP = 200'000U;
-#endif
+    enum KeepStrat { SPP, SCP };
+
+    class Instance;
+    class GlobalSolution;
+    typedef void (*NewBestCallback)(Instance &, GlobalSolution &);
+
 
 }  // namespace sph
 
