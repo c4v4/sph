@@ -1,3 +1,18 @@
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_SPHEURISTIC_HPP_
 #define SPH_INCLUDE_SPHEURISTIC_HPP_
 
@@ -66,7 +81,7 @@ namespace sph {
          */
         inline const std::vector<idx_t> &add_solution(const std::vector<real_t> &costs, const std::vector<idx_t> &matbeg,
                                                       const std::vector<idx_t> &matval) {
-            real_t sol_cost = std::reduce(costs.begin(), costs.end());
+            real_t sol_cost = std::accumulate(costs.begin(), costs.end(), 0.0);
             std::vector<real_t> sol_costs(costs.size(), sol_cost);
             GlobalSolution candidate(inst.add_columns(costs, sol_costs, matbeg, matval), sol_cost);
             if (sol_cost < warmstart.get_cost()) {
@@ -87,7 +102,7 @@ namespace sph {
         template <typename UniqueColContainer>
         inline const std::vector<idx_t> &add_solution(const std::vector<real_t> &costs, const UniqueColContainer &new_cols_rows) {
 
-            real_t sol_cost = std::reduce(costs.begin(), costs.end());
+            real_t sol_cost = std::accumulate(costs.begin(), costs.end(), 0.0);
             auto cost_it = costs.begin();
             std::vector<UniqueCol> new_cols;
             for (auto &col : new_cols_rows) {

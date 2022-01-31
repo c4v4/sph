@@ -1,3 +1,18 @@
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_LOWERBOUND_HPP_
 #define SPH_INCLUDE_LOWERBOUND_HPP_
 
@@ -78,7 +93,7 @@ namespace sph {
     real_t lagr_mul_LB(SubInstance& subinst, const LocalMultipliers& u_k, const Iter& begin, const Iter& end) {
         constexpr real_t threshold = static_cast<real_t>(n) / static_cast<real_t>(d);
 
-        real_t LB = std::reduce(u_k.begin(), u_k.end(), 0.0);
+        real_t LB = std::accumulate(u_k.begin(), u_k.end(), 0.0);
 
         for (auto it = begin; it != end; ++it) {
             auto& col = subinst.get_col(*it);
@@ -94,7 +109,7 @@ namespace sph {
         constexpr real_t threshold = static_cast<real_t>(n) / static_cast<real_t>(d);
 
         auto& cols = subinst.get_cols();
-        real_t LB = std::reduce(u_k.begin(), u_k.end(), 0.0);
+        real_t LB = std::accumulate(u_k.begin(), u_k.end(), 0.0);
         // fmt::print("BASE LB ORIG: {}\n", LB);
         for (auto& col : cols) {
             real_t c_u = col.compute_lagr_cost(u_k);
@@ -109,7 +124,7 @@ namespace sph {
         constexpr real_t threshold = static_cast<real_t>(n) / static_cast<real_t>(d);
 
         const auto& cols = subinst.get_cols();
-        real_t LB = std::reduce(u_k.begin(), u_k.end(), 0.0);
+        real_t LB = std::accumulate(u_k.begin(), u_k.end(), 0.0);
         // fmt::print("BASE LB ORIG: {}\n", LB);
         for (const auto& col : cols) {
             real_t c_u = col.compute_lagr_cost(u_k);

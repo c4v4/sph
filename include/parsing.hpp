@@ -1,3 +1,18 @@
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_PARSING_HPP_
 #define SPH_INCLUDE_PARSING_HPP_
 
@@ -6,13 +21,15 @@
 #include <fstream>
 #include <sstream>
 
+#include "cft.hpp"
+
 struct InstanceData {
     unsigned nrows{};
     std::vector<double> costs{};
     std::vector<double> solcosts{};
-    std::vector<unsigned> matbeg{};
-    std::vector<unsigned> matval{};
-    std::vector<unsigned> warmstart;
+    std::vector<sph::idx_t> matbeg{};
+    std::vector<sph::idx_t> matval{};
+    std::vector<sph::idx_t> warmstart;
 };
 
 // trim from start (in place)
@@ -36,7 +53,9 @@ std::vector<std::string> split(std::string& s, char delim) {
     std::vector<std::string> elems;
     std::stringstream ss(s);
     std::string item;
-    while (std::getline(ss, item, delim)) { elems.push_back(item); }
+    while (std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
     return elems;
 }
 
@@ -90,7 +109,9 @@ InstanceData parse_scp_instance(const std::string& path) {
 
     for (const auto& col : cols) {
         inst.matbeg.emplace_back(inst.matval.size());
-        for (const auto i : col) { inst.matval.emplace_back(i); }
+        for (const auto i : col) {
+            inst.matval.emplace_back(i);
+        }
     }
 
     inst.matbeg.emplace_back(inst.matval.size());
@@ -167,7 +188,9 @@ InstanceData parse_cvrp_instance(const std::string& path) {
 
     std::getline(in, line);
     tokens = split(line, ' ');
-    for (const auto& v : tokens) { inst.warmstart.emplace_back(std::stoul(v)); }
+    for (const auto& v : tokens) {
+        inst.warmstart.emplace_back(std::stoul(v));
+    }
 
     return inst;
 }

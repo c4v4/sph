@@ -23,6 +23,21 @@
 /* ######## Original Header: include/cft.hpp                        ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_CFT_HPP_
 #define SPH_INCLUDE_CFT_HPP_
 
@@ -77,6 +92,21 @@ namespace sph {
 /* ######################################################################### */
 /* ######## Original Header: include/ForwardIterator.hpp            ######## */
 /* ######################################################################### */
+
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifndef CAV_FORWARDITERATOR_HPP
 #define CAV_FORWARDITERATOR_HPP
@@ -137,6 +167,21 @@ namespace cav {
 /* ######################################################################### */
 /* ######## Original Header: include/CollectionOf.hpp               ######## */
 /* ######################################################################### */
+
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifndef SPH_INCLUDE_COLUMNS_HPP_
 #define SPH_INCLUDE_COLUMNS_HPP_
@@ -489,6 +534,21 @@ namespace sph {
 /* ######## Original Header: include/MStar.hpp                      ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_MSTAR_HPP_
 #define SPH_INCLUDE_MSTAR_HPP_
 
@@ -581,6 +641,21 @@ namespace sph {
 /* ######## Original Header: include/Stopwatch.hpp                  ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_STOPWATCH_HPP_
 #define SPH_INCLUDE_STOPWATCH_HPP_
 
@@ -654,6 +729,21 @@ namespace sph {
 /* ######################################################################### */
 /* ######## Original Header: include/IndexList.hpp                  ######## */
 /* ######################################################################### */
+
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifndef SPH_INCLUDE_INDEXLIST_HPP_
 #define SPH_INCLUDE_INDEXLIST_HPP_
@@ -731,6 +821,21 @@ namespace sph {
 /* ######################################################################### */
 /* ######## Original Header: include/VectorSet.hpp                  ######## */
 /* ######################################################################### */
+
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifndef CAV_VECTORSET_HPP
 #define CAV_VECTORSET_HPP
@@ -895,6 +1000,21 @@ namespace cav {
 /* ######## Original Header: include/UniqueCol.hpp                  ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_ROUTE_HPP_
 #define SPH_INCLUDE_ROUTE_HPP_
 
@@ -975,6 +1095,21 @@ namespace sph {
 /* ######## Original Header: include/UniqueColSet.hpp               ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_ROUTEPOOL_HPP_
 #define SPH_INCLUDE_ROUTEPOOL_HPP_
 
@@ -1042,6 +1177,21 @@ namespace sph {
 /* ######################################################################### */
 /* ######## Original Header: include/Instance.hpp                   ######## */
 /* ######################################################################### */
+
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifndef SPH_INCLUDE_INSTANCE_HPP_
 #define SPH_INCLUDE_INSTANCE_HPP_
@@ -1325,7 +1475,7 @@ namespace sph {
             _priced_cols.reset(active_cols.size());
 
             // price all active columns and add their contribution to the LB
-            real_t global_LB = std::reduce(u_k.begin(), u_k.end(), static_cast<real_t>(0.0));
+            real_t global_LB = std::accumulate(u_k.begin(), u_k.end(), static_cast<real_t>(0.0));
 
             idx_t p_idx = 0;
             for (idx_t gj : active_cols) {
@@ -1568,6 +1718,21 @@ namespace sph {
 /* ######## Original Header: include/SubInstance.hpp                ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_SUBINSTANCE_HPP_
 #define SPH_INCLUDE_SUBINSTANCE_HPP_
 
@@ -1674,7 +1839,7 @@ namespace sph {
         }
 
         [[nodiscard]] real_t get_global_LB(const std::vector<real_t> &u_k) {
-            real_t global_LB = std::reduce(u_k.begin(), u_k.end(), static_cast<real_t>(0.0));
+            real_t global_LB = std::accumulate(u_k.begin(), u_k.end(), static_cast<real_t>(0.0));
 
             // price all active columns and add their contribution to the LB
             for (idx_t gj : inst.get_active_cols()) {
@@ -2018,6 +2183,21 @@ namespace sph {
 /* ######## Original Header: include/Solution.hpp                   ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_SOLUTION_HPP_
 #define SPH_INCLUDE_SOLUTION_HPP_
 #include <vector>
@@ -2170,6 +2350,21 @@ namespace sph {
 /* ######## Original Header: include/ExactSolver.hpp                ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_EXACTSOLVER_HPP_
 #define SPH_INCLUDE_EXACTSOLVER_HPP_
 
@@ -2253,7 +2448,7 @@ namespace sph {
             RESIZE_UP(dbl_vals, ncols + 1U);
             LocalSolution sol;
 
-            if (((res = CPXsolution(env, lp, &stat, &obj, dbl_vals.data(), nullptr, nullptr, nullptr) == 0))) {
+            if ((CPXsolution(env, lp, &stat, &obj, dbl_vals.data(), nullptr, nullptr, nullptr) == 0)) {
                 for (int i = 0; i < ncols; ++i) {
                     if (dbl_vals[i] > 0.5) {
                         sol.emplace_back(i);
@@ -2423,6 +2618,21 @@ namespace sph {
 /* ######## Original Header: include/Multipliers.hpp                ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_MULTIPLIERS_HPP_
 #define SPH_INCLUDE_MULTIPLIERS_HPP_
 #include <vector>
@@ -2438,7 +2648,7 @@ namespace sph {
 
         [[nodiscard]] inline real_t compute_lb(SubInstance& subinst) const {
             auto& cols = subinst.get_cols();
-            real_t LB = std::reduce(begin(), end(), 0.0);
+            real_t LB = std::accumulate(begin(), end(), 0.0);
             for (auto& col : cols) {
                 real_t c_u = col.compute_lagr_cost(*this);
                 if (c_u < 0.0) { LB += c_u; }
@@ -2504,6 +2714,21 @@ namespace sph {
 /* ######################################################################### */
 /* ######## Original Header: include/LowerBound.hpp                 ######## */
 /* ######################################################################### */
+
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifndef SPH_INCLUDE_LOWERBOUND_HPP_
 #define SPH_INCLUDE_LOWERBOUND_HPP_
@@ -2585,7 +2810,7 @@ namespace sph {
     real_t lagr_mul_LB(SubInstance& subinst, const LocalMultipliers& u_k, const Iter& begin, const Iter& end) {
         constexpr real_t threshold = static_cast<real_t>(n) / static_cast<real_t>(d);
 
-        real_t LB = std::reduce(u_k.begin(), u_k.end(), 0.0);
+        real_t LB = std::accumulate(u_k.begin(), u_k.end(), 0.0);
 
         for (auto it = begin; it != end; ++it) {
             auto& col = subinst.get_col(*it);
@@ -2601,7 +2826,7 @@ namespace sph {
         constexpr real_t threshold = static_cast<real_t>(n) / static_cast<real_t>(d);
 
         auto& cols = subinst.get_cols();
-        real_t LB = std::reduce(u_k.begin(), u_k.end(), 0.0);
+        real_t LB = std::accumulate(u_k.begin(), u_k.end(), 0.0);
         // fmt::print("BASE LB ORIG: {}\n", LB);
         for (auto& col : cols) {
             real_t c_u = col.compute_lagr_cost(u_k);
@@ -2616,7 +2841,7 @@ namespace sph {
         constexpr real_t threshold = static_cast<real_t>(n) / static_cast<real_t>(d);
 
         const auto& cols = subinst.get_cols();
-        real_t LB = std::reduce(u_k.begin(), u_k.end(), 0.0);
+        real_t LB = std::accumulate(u_k.begin(), u_k.end(), 0.0);
         // fmt::print("BASE LB ORIG: {}\n", LB);
         for (const auto& col : cols) {
             real_t c_u = col.compute_lagr_cost(u_k);
@@ -2720,6 +2945,21 @@ namespace sph {
 /* ######## Original Header: include/Counter.hpp                    ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_COUNTER_HPP_
 #define SPH_INCLUDE_COUNTER_HPP_
 
@@ -2750,6 +2990,21 @@ namespace sph {
 /* ######################################################################### */
 /* ######## Original Header: include/SubGradientUtils.hpp           ######## */
 /* ######################################################################### */
+
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifndef SPH_INCLUDE_SUBGRADIENTUTILS_HPP_
 #define SPH_INCLUDE_SUBGRADIENTUTILS_HPP_
@@ -2856,6 +3111,21 @@ namespace sph {
 /* ######################################################################### */
 /* ######## Original Header: include/SubGradient.hpp                ######## */
 /* ######################################################################### */
+
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifndef SPH_INCLUDE_SUBGRADIENT_HPP_
 #define SPH_INCLUDE_SUBGRADIENT_HPP_
@@ -3011,6 +3281,21 @@ namespace sph {
 /* ######## Original Header: include/TwoPhase.hpp                   ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_TWOPHASE_HPP_
 #define SPH_INCLUDE_TWOPHASE_HPP_
 
@@ -3068,9 +3353,11 @@ namespace sph {
     private:
         LocalSolution cplex_heur(const LocalSolution& S_init, const Timer& exact_time_limit) {
 
-            real_t fixed_cost = subinst.get_fixed_cost();
-            real_t S_init_cost = S_init.compute_cost(subinst);
-            SPH_VERBOSE(3) { fmt::print("    │ Initial solution value {} (global: {})\n", S_init_cost, S_init_cost + fixed_cost); }
+            SPH_VERBOSE(3) {
+                real_t fixed_cost = subinst.get_fixed_cost();
+                real_t S_init_cost = S_init.compute_cost(subinst);
+                fmt::print("    │ Initial solution value {} (global: {})\n", S_init_cost, S_init_cost + fixed_cost);
+            }
 
             return exact.build_and_opt(subinst, S_init, exact_time_limit);
         }
@@ -3091,6 +3378,21 @@ namespace sph {
 /* ######################################################################### */
 /* ######## Original Header: include/Refinement.hpp                 ######## */
 /* ######################################################################### */
+
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifndef SPH_INCLUDE_REFINEMENT_HPP_
 #define SPH_INCLUDE_REFINEMENT_HPP_
@@ -3404,6 +3706,21 @@ namespace sph {
 /* ######## Original Header: include/SPHeuristic.hpp                ######## */
 /* ######################################################################### */
 
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_SPHEURISTIC_HPP_
 #define SPH_INCLUDE_SPHEURISTIC_HPP_
 
@@ -3472,7 +3789,7 @@ namespace sph {
          */
         inline const std::vector<idx_t> &add_solution(const std::vector<real_t> &costs, const std::vector<idx_t> &matbeg,
                                                       const std::vector<idx_t> &matval) {
-            real_t sol_cost = std::reduce(costs.begin(), costs.end());
+            real_t sol_cost = std::accumulate(costs.begin(), costs.end(), 0.0);
             std::vector<real_t> sol_costs(costs.size(), sol_cost);
             GlobalSolution candidate(inst.add_columns(costs, sol_costs, matbeg, matval), sol_cost);
             if (sol_cost < warmstart.get_cost()) {
@@ -3493,7 +3810,7 @@ namespace sph {
         template <typename UniqueColContainer>
         inline const std::vector<idx_t> &add_solution(const std::vector<real_t> &costs, const UniqueColContainer &new_cols_rows) {
 
-            real_t sol_cost = std::reduce(costs.begin(), costs.end());
+            real_t sol_cost = std::accumulate(costs.begin(), costs.end(), 0.0);
             auto cost_it = costs.begin();
             std::vector<UniqueCol> new_cols;
             for (auto &col : new_cols_rows) {

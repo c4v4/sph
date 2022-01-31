@@ -1,3 +1,18 @@
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_MULTIPLIERS_HPP_
 #define SPH_INCLUDE_MULTIPLIERS_HPP_
 #include <vector>
@@ -13,7 +28,7 @@ namespace sph {
 
         [[nodiscard]] inline real_t compute_lb(SubInstance& subinst) const {
             auto& cols = subinst.get_cols();
-            real_t LB = std::reduce(begin(), end(), 0.0);
+            real_t LB = std::accumulate(begin(), end(), 0.0);
             for (auto& col : cols) {
                 real_t c_u = col.compute_lagr_cost(*this);
                 if (c_u < 0.0) { LB += c_u; }

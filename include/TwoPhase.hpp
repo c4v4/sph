@@ -1,3 +1,18 @@
+// Copyright (c) 2022 Francesco Cavaliere
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #ifndef SPH_INCLUDE_TWOPHASE_HPP_
 #define SPH_INCLUDE_TWOPHASE_HPP_
 
@@ -55,9 +70,11 @@ namespace sph {
     private:
         LocalSolution cplex_heur(const LocalSolution& S_init, const Timer& exact_time_limit) {
 
-            real_t fixed_cost = subinst.get_fixed_cost();
-            real_t S_init_cost = S_init.compute_cost(subinst);
-            SPH_VERBOSE(3) { fmt::print("    │ Initial solution value {} (global: {})\n", S_init_cost, S_init_cost + fixed_cost); }
+            SPH_VERBOSE(3) {
+                real_t fixed_cost = subinst.get_fixed_cost();
+                real_t S_init_cost = S_init.compute_cost(subinst);
+                fmt::print("    │ Initial solution value {} (global: {})\n", S_init_cost, S_init_cost + fixed_cost);
+            }
 
             return exact.build_and_opt(subinst, S_init, exact_time_limit);
         }
