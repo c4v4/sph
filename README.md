@@ -3,6 +3,19 @@ Set Partitioning Heuristic (SPH) based on CPLEX MILP solver and created starting
 
 [1] *Caprara, A., Fischetti, M., & Toth, P. (1999). A Heuristic Method for the Set Covering Problem. Operations Research, 47(5), 730–743. [doi:10.1287/opre.47.5.730](https://doi.org/10.1287/opre.47.5.730)*
 
+It took part to DIMACS 12th Implementation Challenge on Vehicle Routing Problems in conjuction with: 
+1. Improved version of Helsgaun's LKH-3.  
+    **Team name:** _Vavavuma!_  
+    **Team members:** F. Cavaliere, M. Fischetti, K. Helsgaun  
+    **Algorithm name:** _LKHSP_  
+    **Repository:** [https://github.com/c4v4/LKH-SP](https://github.com/c4v4/LKH-SP)) 
+
+2. L. Accorsi and D. Vigo FILO algorithm.  
+    **Team name:** _Route2Bo_  
+    **Team members:** L. Accorsi, F. Cavaliere, D. Vigo  
+    **Algorithm name:** FSP4D  
+    **Repository:** [https://github.com/falcopt/f4d](https://github.com/falcopt/f4d)
+
 
 ## Build
 1. Create a target binary target directory:
