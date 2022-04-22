@@ -4,6 +4,8 @@ project(SPH)
 option(USE_CLANG "build application with clang" ON) # OFF is the default
 
 set(CMAKE_CXX_STANDARD 17)
+add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
+
 set(WARNING_FLAGS "-Wall -Wextra -Wpedantic -Wuninitialized -Wshadow ") # -Werror
 set(SANITIZERS_FLAGS "-fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope -fsanitize=undefined")
 #set(OPT_FLAGS "-O3 -march=native -ffat-lto-objects -flto -g -fno-omit-frame-pointer")
