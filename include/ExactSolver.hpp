@@ -118,7 +118,6 @@ namespace sph {
             return sol;
         }
 
-
         ////////// PRIVATE METHODS //////////
 
     private:
@@ -179,7 +178,9 @@ namespace sph {
             }
 
             ASSIGN_UP(ones, static_cast<size_t>(nzcount), 1.0);
-            ASSIGN_UP(sense, static_cast<size_t>(nrows), 'E');
+
+            char s = subinst.get_instance().get_MIP_strategy() == SPP ? 'E' : 'G';
+            ASSIGN_UP(sense, static_cast<size_t>(nrows), s);
 
             return CPXaddrows(env, lp, 0, nrows, nzcount, ones.data(), sense.data(), rmatbeg.data(), rmatind.data(), ones.data(), nullptr,
                               nullptr);
@@ -223,6 +224,7 @@ namespace sph {
                 return res;
             }
 
+            CPXchgprobtype(env, lp, CPXPROB_MILP);
             SET_INT(CPXPARAM_ScreenOutput, CPX_OFF);
             SET_INT(CPXPARAM_MIP_Display, 2);
             SET_INT(CPXPARAM_Threads, 1);

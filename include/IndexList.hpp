@@ -17,6 +17,7 @@
 #define SPH_INCLUDE_INDEXLIST_HPP_
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 #include "cft.hpp"
@@ -70,9 +71,13 @@ namespace sph {
         }
 
         bool operator==(const Column& other) const {
-            if (c != other.c || sol_c != other.sol_c || size() != other.size()) { return false; }
+            if (c != other.c || sol_c != other.sol_c || size() != other.size()) {
+                return false;
+            }
             for (idx_t n = 0; n < size(); ++n) {
-                if ((*this)[n] != other[n]) { return false; }
+                if ((*this)[n] != other[n]) {
+                    return false;
+                }
             }
             return true;
         }

@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cassert>
 #include <numeric>
+#include <vector>
 
 #include "ForwardIterator.hpp"
 #include "cft.hpp"

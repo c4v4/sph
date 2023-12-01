@@ -92,7 +92,7 @@ namespace sph {
 
                     assert(!(std::fabs(pi - PI_MIN) > 0.001 && inst.get_fixed_cols().empty()));
                     pi *= ALPHA;  // 6.
-                    
+
                     if (!S.empty()) {
                         inst.update_sol_costs(S, S.get_cost());
                         if (S_star.get_cost() - S.get_cost() > EPSILON) {  // update best solution
@@ -306,7 +306,7 @@ namespace sph {
 
         SubInstance subinst;
         MStar covered_rows;
-        TwoPhase two_phase;
+        TwoPhase<> two_phase;
 
         std::mt19937& rnd;
 

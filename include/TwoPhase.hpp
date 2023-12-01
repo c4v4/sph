@@ -30,9 +30,10 @@
 
 namespace sph {
 
+    template <typename PricingT = SubGradient>
     class TwoPhase {
     public:
-        TwoPhase(SubInstance& subinst_) : subinst(subinst_), subgradient(subinst_) { }
+        TwoPhase(SubInstance& subinst_) : subinst(subinst_), pricer(subinst_) { }
 
         inline GlobalSolution solve(const real_t global_UB, const GlobalSolution& S_star, const Timer& exact_time_limit) {
             return operator()(global_UB, S_star, exact_time_limit);
@@ -47,9 +48,9 @@ namespace sph {
             real_t subgrad_UB = glb_UB_star - fixed_cost;
 
             // 1. SUBGRADIENT PHASE
-            LocalMultipliers u_k = subgradient.solve(subgrad_UB, SubGradient::u_greedy_init(subinst), subinst.get_timelimit());
+            LocalMultipliers u_k = pricer.price(subgrad_UB, subinst.get_timelimit());
 
-            real_t lcl_LB = subgradient.get_best_LB();
+            real_t lcl_LB = pricer.get_best_LB();
             real_t glb_LB = fixed_cost + lcl_LB;
 
             if (fixed_cost == 0.0) {
@@ -83,7 +84,7 @@ namespace sph {
     private:
         SubInstance& subinst;
 
-        SubGradient subgradient;
+        PricingT pricer;
         ExactSolver exact;
 
         GlobalMultipliers glo_u;

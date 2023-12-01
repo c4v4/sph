@@ -190,6 +190,7 @@ namespace cav {
 #include <algorithm>
 #include <cassert>
 #include <numeric>
+#include <vector>
 
 /* #include "ForwardIterator.hpp" */
 /* #include "cft.hpp" */
@@ -749,6 +750,7 @@ namespace sph {
 #define SPH_INCLUDE_INDEXLIST_HPP_
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 /* #include "cft.hpp" */
@@ -802,9 +804,13 @@ namespace sph {
         }
 
         bool operator==(const Column& other) const {
-            if (c != other.c || sol_c != other.sol_c || size() != other.size()) { return false; }
+            if (c != other.c || sol_c != other.sol_c || size() != other.size()) {
+                return false;
+            }
             for (idx_t n = 0; n < size(); ++n) {
-                if ((*this)[n] != other[n]) { return false; }
+                if ((*this)[n] != other[n]) {
+                    return false;
+                }
             }
             return true;
         }
@@ -1239,9 +1245,11 @@ namespace sph {
             return ncols_constr > fixed_cols.size() ? ncols_constr - fixed_cols.size() : 0;
         }
         [[nodiscard]] inline KeepStrat get_keepcol_strategy() { return keep_col_strat; }
+        inline KeepStrat get_MIP_strategy() const { return mip_strat; }
         inline void set_ncols_constr(idx_t ncols_constr_) { ncols_constr = ncols_constr_; }
         inline void set_max_routes(idx_t inst_max_routes_) { inst_max_routes = inst_max_routes_; }
         inline void set_keepcol_strategy(KeepStrat keep_col_strat_) { keep_col_strat = keep_col_strat_; }
+        inline void set_MIP_strategy(KeepStrat mip_strat_) { mip_strat = mip_strat_; }
         inline void set_timelimit(double seconds) { timelimit = Timer(seconds); }
         [[nodiscard]] inline Timer &get_timelimit() { return timelimit; }
 
@@ -1707,6 +1715,7 @@ namespace sph {
         MStar covering_times;
         idx_t inst_max_routes = INST_HARD_CAP;
         KeepStrat keep_col_strat = SPP;
+        KeepStrat mip_strat = SPP;
         NewBestCallback new_best_callback;
         Timer timelimit;
     };
@@ -2470,7 +2479,6 @@ namespace sph {
             return sol;
         }
 
-
         ////////// PRIVATE METHODS //////////
 
     private:
@@ -2531,7 +2539,9 @@ namespace sph {
             }
 
             ASSIGN_UP(ones, static_cast<size_t>(nzcount), 1.0);
-            ASSIGN_UP(sense, static_cast<size_t>(nrows), 'E');
+
+            char s = subinst.get_instance().get_MIP_strategy() == SPP ? 'E' : 'G';
+            ASSIGN_UP(sense, static_cast<size_t>(nrows), s);
 
             return CPXaddrows(env, lp, 0, nrows, nzcount, ones.data(), sense.data(), rmatbeg.data(), rmatind.data(), ones.data(), nullptr,
                               nullptr);
@@ -2575,6 +2585,7 @@ namespace sph {
                 return res;
             }
 
+            CPXchgprobtype(env, lp, CPXPROB_MILP);
             SET_INT(CPXPARAM_ScreenOutput, CPX_OFF);
             SET_INT(CPXPARAM_MIP_Display, 2);
             SET_INT(CPXPARAM_Threads, 1);
@@ -3160,7 +3171,9 @@ namespace sph {
                 for (const auto j : subinst.get_row(i)) {
                     assert(!subinst.get_rows().empty());
                     const auto candidate = subinst.get_col(j).get_cost() / static_cast<real_t>(subinst.get_col(j).size());
-                    if (candidate < u_0[i]) { u_0[i] = candidate; }
+                    if (candidate < u_0[i]) {
+                        u_0[i] = candidate;
+                    }
                 }
             }
 
@@ -3173,12 +3186,16 @@ namespace sph {
             auto dist = std::uniform_real_distribution<real_t>(0.9, 1.1);
 
             idx_t u0size = u_0.size();
-            for (idx_t i = 0; i < u0size; i++) { u_0[i] = dist(rnd) * u_star[i]; }
+            for (idx_t i = 0; i < u0size; i++) {
+                u_0[i] = dist(rnd) * u_star[i];
+            }
 
             return u_0;
         }
 
-        LocalMultipliers solve(real_t UB, const LocalMultipliers& u_0, const Timer& time_limit) {
+        LocalMultipliers price(real_t UB, const Timer& time_limit) { return price(UB, u_greedy_init(subinst), time_limit); }
+
+        LocalMultipliers price(real_t UB, const LocalMultipliers& u_0, const Timer& time_limit) {
             size_t max_iter = 10 * subinst.get_rows().size();
             idx_t nrows = subinst.get_rows().size();
 
@@ -3198,7 +3215,9 @@ namespace sph {
             std::vector<std::pair<idx_t, real_t>> delta_u;
 
             for (idx_t iter = 0; iter < max_iter; ++iter) {
-                if (time_limit.exceeded_tlim()) { break; }
+                if (time_limit.exceeded_tlim()) {
+                    break;
+                }
 
                 lambda.update(real_LB);
                 norm_reducer.compute_reduced_sol(subinst, S, covered_rows);
@@ -3206,11 +3225,14 @@ namespace sph {
                 // Multipliers update:
                 delta_u.clear();
                 idx_t s2sum = 0;
-                for (idx_t cov : covered_rows) { s2sum += (1 - static_cast<int>(cov)) * (1 - static_cast<int>(cov)); }
+                for (idx_t cov : covered_rows) {
+                    s2sum += (1 - static_cast<int>(cov)) * (1 - static_cast<int>(cov));
+                }
 
                 if (s2sum > 0) {
                     for (idx_t i = 0; i < nrows; ++i) {
-                        real_t new_u = std::max<real_t>(0.0, u[i] + lambda.get() * ((UB - real_LB) / s2sum) * (1 - static_cast<int>(covered_rows[i])));
+                        real_t new_u = std::max<real_t>(
+                            0.0, u[i] + lambda.get() * ((UB - real_LB) / s2sum) * (1 - static_cast<int>(covered_rows[i])));
                         if (std::abs(new_u - u[i]) > REAL_TOLERANCE) {
                             delta_u.emplace_back(i, new_u - u[i]);
                             u[i] = new_u;
@@ -3239,10 +3261,14 @@ namespace sph {
 
                 if (covered_rows.get_uncovered() == 0) {
                     real_t S_cost = S.compute_cost(subinst);
-                    if (S_cost < UB) { UB = S_cost; }
+                    if (S_cost < UB) {
+                        UB = S_cost;
+                    }
                 }
 
-                if (exit_now(LB_star)) { return u_star; }
+                if (exit_now(LB_star)) {
+                    return u_star;
+                }
 
                 T.inc();
                 if (T.reached()) {
@@ -3313,9 +3339,10 @@ namespace sph {
 
 namespace sph {
 
+    template <typename PricingT = SubGradient>
     class TwoPhase {
     public:
-        TwoPhase(SubInstance& subinst_) : subinst(subinst_), subgradient(subinst_) { }
+        TwoPhase(SubInstance& subinst_) : subinst(subinst_), pricer(subinst_) { }
 
         inline GlobalSolution solve(const real_t global_UB, const GlobalSolution& S_star, const Timer& exact_time_limit) {
             return operator()(global_UB, S_star, exact_time_limit);
@@ -3330,9 +3357,9 @@ namespace sph {
             real_t subgrad_UB = glb_UB_star - fixed_cost;
 
             // 1. SUBGRADIENT PHASE
-            LocalMultipliers u_k = subgradient.solve(subgrad_UB, SubGradient::u_greedy_init(subinst), subinst.get_timelimit());
+            LocalMultipliers u_k = pricer.price(subgrad_UB, subinst.get_timelimit());
 
-            real_t lcl_LB = subgradient.get_best_LB();
+            real_t lcl_LB = pricer.get_best_LB();
             real_t glb_LB = fixed_cost + lcl_LB;
 
             if (fixed_cost == 0.0) {
@@ -3366,7 +3393,7 @@ namespace sph {
     private:
         SubInstance& subinst;
 
-        SubGradient subgradient;
+        PricingT pricer;
         ExactSolver exact;
 
         GlobalMultipliers glo_u;
@@ -3473,7 +3500,7 @@ namespace sph {
 
                     assert(!(std::fabs(pi - PI_MIN) > 0.001 && inst.get_fixed_cols().empty()));
                     pi *= ALPHA;  // 6.
-                    
+
                     if (!S.empty()) {
                         inst.update_sol_costs(S, S.get_cost());
                         if (S_star.get_cost() - S.get_cost() > EPSILON) {  // update best solution
@@ -3687,7 +3714,7 @@ namespace sph {
 
         SubInstance subinst;
         MStar covered_rows;
-        TwoPhase two_phase;
+        TwoPhase<> two_phase;
 
         std::mt19937& rnd;
 
@@ -3924,6 +3951,7 @@ namespace sph {
          * @param strat
          */
         void set_keepcol_strategy(KeepStrat strat) { inst.set_keepcol_strategy(strat); }
+        void set_MIP_strategy(KeepStrat strat) { inst.set_MIP_strategy(strat); }
 
         inline void set_new_best_callback(NewBestCallback cb) { inst.set_new_best_callback(cb); }
 

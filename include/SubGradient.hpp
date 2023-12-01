@@ -46,7 +46,9 @@ namespace sph {
                 for (const auto j : subinst.get_row(i)) {
                     assert(!subinst.get_rows().empty());
                     const auto candidate = subinst.get_col(j).get_cost() / static_cast<real_t>(subinst.get_col(j).size());
-                    if (candidate < u_0[i]) { u_0[i] = candidate; }
+                    if (candidate < u_0[i]) {
+                        u_0[i] = candidate;
+                    }
                 }
             }
 
@@ -59,12 +61,16 @@ namespace sph {
             auto dist = std::uniform_real_distribution<real_t>(0.9, 1.1);
 
             idx_t u0size = u_0.size();
-            for (idx_t i = 0; i < u0size; i++) { u_0[i] = dist(rnd) * u_star[i]; }
+            for (idx_t i = 0; i < u0size; i++) {
+                u_0[i] = dist(rnd) * u_star[i];
+            }
 
             return u_0;
         }
 
-        LocalMultipliers solve(real_t UB, const LocalMultipliers& u_0, const Timer& time_limit) {
+        LocalMultipliers price(real_t UB, const Timer& time_limit) { return price(UB, u_greedy_init(subinst), time_limit); }
+
+        LocalMultipliers price(real_t UB, const LocalMultipliers& u_0, const Timer& time_limit) {
             size_t max_iter = 10 * subinst.get_rows().size();
             idx_t nrows = subinst.get_rows().size();
 
@@ -84,7 +90,9 @@ namespace sph {
             std::vector<std::pair<idx_t, real_t>> delta_u;
 
             for (idx_t iter = 0; iter < max_iter; ++iter) {
-                if (time_limit.exceeded_tlim()) { break; }
+                if (time_limit.exceeded_tlim()) {
+                    break;
+                }
 
                 lambda.update(real_LB);
                 norm_reducer.compute_reduced_sol(subinst, S, covered_rows);
@@ -92,11 +100,14 @@ namespace sph {
                 // Multipliers update:
                 delta_u.clear();
                 idx_t s2sum = 0;
-                for (idx_t cov : covered_rows) { s2sum += (1 - static_cast<int>(cov)) * (1 - static_cast<int>(cov)); }
+                for (idx_t cov : covered_rows) {
+                    s2sum += (1 - static_cast<int>(cov)) * (1 - static_cast<int>(cov));
+                }
 
                 if (s2sum > 0) {
                     for (idx_t i = 0; i < nrows; ++i) {
-                        real_t new_u = std::max<real_t>(0.0, u[i] + lambda.get() * ((UB - real_LB) / s2sum) * (1 - static_cast<int>(covered_rows[i])));
+                        real_t new_u = std::max<real_t>(
+                            0.0, u[i] + lambda.get() * ((UB - real_LB) / s2sum) * (1 - static_cast<int>(covered_rows[i])));
                         if (std::abs(new_u - u[i]) > REAL_TOLERANCE) {
                             delta_u.emplace_back(i, new_u - u[i]);
                             u[i] = new_u;
@@ -125,10 +136,14 @@ namespace sph {
 
                 if (covered_rows.get_uncovered() == 0) {
                     real_t S_cost = S.compute_cost(subinst);
-                    if (S_cost < UB) { UB = S_cost; }
+                    if (S_cost < UB) {
+                        UB = S_cost;
+                    }
                 }
 
-                if (exit_now(LB_star)) { return u_star; }
+                if (exit_now(LB_star)) {
+                    return u_star;
+                }
 
                 T.inc();
                 if (T.reached()) {

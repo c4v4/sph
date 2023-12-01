@@ -11,12 +11,19 @@
 
 #include "parsing.hpp"
 
+static std::pair<sph::GlobalSolution, sph::real_t> run_sph(InstanceData& data, unsigned long seed, double tlim);
+void run_cft();
+void run_sph();
+void run_sph();
+void run_sph();
+void run_sph();
+
 void print_sol(sph::Instance& inst, sph::GlobalSolution& sol) {
     int route = 1;
     for (sph::idx_t j : sol) {
         fmt::print("Route #{}: {}\n", route++, fmt::join(inst.get_col(j), " "));
     }
-    fmt::print("Cost {}", sol.get_cost());
+    fmt::print("Cost {}\n", sol.get_cost());
 }
 
 int main(int argc, char** argv) {
@@ -43,6 +50,14 @@ int main(int argc, char** argv) {
     fmt::print("Time limit (s) : {}\n", tlim);
 
     InstanceData data = parse_cvrp_instance(path);
+    auto [solution, sol_cost] = run_sph(data, seed, tlim);
+
+    fmt::print("Solution (cost {}):\n{}\n", sol_cost, fmt::join(solution, ", "));
+
+    return 0;
+}
+
+std::pair<sph::GlobalSolution, sph::real_t> run_sph(InstanceData& data, unsigned long seed, double tlim) {
 
     sph::SPHeuristic sph(data.nrows, seed);
     std::vector<sph::idx_t> inserted_idxs = sph.add_columns(data.costs, data.solcosts, data.matbeg, data.matval);
@@ -54,14 +69,12 @@ int main(int argc, char** argv) {
     sph.set_max_routes(50000);
     sph.set_keepcol_strategy(sph::SPP);
     sph.set_new_best_callback(print_sol);
-    auto solution = sph.solve(data.warmstart);
 
+    auto solution = sph.solve(data.warmstart);
     sph::real_t sol_cost = 0.0;
     for (auto j : solution) {
         sol_cost += sph.get_col(j).get_cost();
     }
 
-    fmt::print("Solution (cost {}):\n{}\n", sol_cost, fmt::join(solution, ", "));
-
-    return 0;
+    return {solution, sol_cost};
 }

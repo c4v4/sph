@@ -59,9 +59,11 @@ namespace sph {
             return ncols_constr > fixed_cols.size() ? ncols_constr - fixed_cols.size() : 0;
         }
         [[nodiscard]] inline KeepStrat get_keepcol_strategy() { return keep_col_strat; }
+        inline KeepStrat get_MIP_strategy() const { return mip_strat; }
         inline void set_ncols_constr(idx_t ncols_constr_) { ncols_constr = ncols_constr_; }
         inline void set_max_routes(idx_t inst_max_routes_) { inst_max_routes = inst_max_routes_; }
         inline void set_keepcol_strategy(KeepStrat keep_col_strat_) { keep_col_strat = keep_col_strat_; }
+        inline void set_MIP_strategy(KeepStrat mip_strat_) { mip_strat = mip_strat_; }
         inline void set_timelimit(double seconds) { timelimit = Timer(seconds); }
         [[nodiscard]] inline Timer &get_timelimit() { return timelimit; }
 
@@ -527,6 +529,7 @@ namespace sph {
         MStar covering_times;
         idx_t inst_max_routes = INST_HARD_CAP;
         KeepStrat keep_col_strat = SPP;
+        KeepStrat mip_strat = SPP;
         NewBestCallback new_best_callback;
         Timer timelimit;
     };

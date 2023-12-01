@@ -216,6 +216,7 @@ namespace sph {
          * @param strat
          */
         void set_keepcol_strategy(KeepStrat strat) { inst.set_keepcol_strategy(strat); }
+        void set_MIP_strategy(KeepStrat strat) { inst.set_MIP_strategy(strat); }
 
         inline void set_new_best_callback(NewBestCallback cb) { inst.set_new_best_callback(cb); }
 
